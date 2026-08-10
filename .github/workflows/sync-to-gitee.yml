@@ -1,5 +1,6 @@
 # 将构建产物部署到 Gitee Pages（gh-pages 分支），并镜像源码到 Gitee main
-# 需要 GitHub Secrets: GITEE_TOKEN（Gitee 私人令牌）、GITEE_USERNAME（Gitee 用户名）
+# 认证方式：SSH 密钥（Gitee 最稳）
+# 需要 GitHub Secrets: GITEE_SSH_KEY（私钥全文，含 BEGIN/END 行）
 name: Sync to Gitee
 
 on:
@@ -28,11 +29,18 @@ jobs:
       - name: Build website (中英文)
         run: npm run build
 
+      # 配置 SSH：写入私钥并添加 Gitee 到已知主机
+      - name: Setup SSH
+        env:
+          GITEE_SSH_KEY: ${{ secrets.GITEE_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "${GITEE_SSH_KEY}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -t ed25519 gitee.com >> ~/.ssh/known_hosts 2>/dev/null
+
       # 1) 把构建产物推送到 Gitee 的 gh-pages 分支（供 Gitee Pages 托管）
       - name: Deploy build to Gitee Pages (gh-pages)
-        env:
-          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
-          GITEE_USERNAME: ${{ secrets.GITEE_USERNAME }}
         run: |
           cd build
           git init -q
@@ -41,14 +49,11 @@ jobs:
           git checkout -b gh-pages
           git add -A
           git commit -q -m "deploy: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
-          # Gitee 用 Token 内嵌 URL 认证，最稳
-          git push -f "https://${GITEE_USERNAME}:${GITEE_TOKEN}@gitee.com/${GITEE_USERNAME}/easydetek.gitee.io.git" gh-pages
+          git remote add gitee "git@gitee.com:easydetek/easydetek.gitee.io.git"
+          git push -f gitee gh-pages
 
       # 2) 镜像源码到 Gitee main 分支（方便国内团队查看/克隆源码）
       - name: Mirror source to Gitee main
-        env:
-          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
-          GITEE_USERNAME: ${{ secrets.GITEE_USERNAME }}
         run: |
-          git remote add gitee "https://${GITEE_USERNAME}:${GITEE_TOKEN}@gitee.com/${GITEE_USERNAME}/easydetek.gitee.io.git"
+          git remote add gitee "git@gitee.com:easydetek/easydetek.gitee.io.git"
           git push -f gitee main
