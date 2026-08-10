@@ -1,0 +1,37 @@
+/**
+ * 首页局部样式（CSS Module，作用域隔离）
+ */
+
+.heroBanner {
+  padding: 5rem 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  background-image: var(--ed-hero-gradient);
+}
+
+.heroBanner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    circle at 80% 20%,
+    rgba(0, 184, 212, 0.25),
+    transparent 45%
+  );
+  pointer-events: none;
+}
+
+@media screen and (max-width: 996px) {
+  .heroBanner {
+    padding: 3rem 1.5rem;
+  }
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}

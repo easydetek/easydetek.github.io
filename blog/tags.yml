@@ -1,0 +1,24 @@
+lighting:
+  label: 智能照明
+  permalink: /case/lighting
+  description: 吸顶灯、筒灯、橱柜灯等智能照明应用案例
+
+security:
+  label: 安防
+  permalink: /case/security
+  description: 安防监控、入侵检测等应用案例
+
+smarthome:
+  label: 智能家居
+  permalink: /case/smarthome
+  description: 智能家居与楼宇自动化应用案例
+
+cluster:
+  label: 集群方案
+  permalink: /case/cluster
+  description: 大空间多机组网应用案例
+
+custom:
+  label: 定制方案
+  permalink: /case/custom
+  description: 客户定制化方案案例

@@ -1,0 +1,26 @@
+{
+  "title": {
+    "message": "EasyDetek",
+    "description": "The title in the navbar"
+  },
+  "logo.alt": {
+    "message": "EasyDetek Logo",
+    "description": "The alt text of navbar logo"
+  },
+  "item.label.产品文档": {
+    "message": "Docs",
+    "description": "Navbar item with label 产品文档"
+  },
+  "item.label.应用案例": {
+    "message": "Case Studies",
+    "description": "Navbar item with label 应用案例"
+  },
+  "item.label.开源项目": {
+    "message": "Open Source",
+    "description": "Navbar item with label 开源项目"
+  },
+  "item.label.GitHub": {
+    "message": "GitHub",
+    "description": "Navbar item with label GitHub"
+  }
+}

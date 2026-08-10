@@ -1,0 +1,27 @@
+.features {
+  display: flex;
+  align-items: center;
+  padding: 3rem 0;
+  width: 100%;
+}
+
+.featureSvg {
+  height: 48px;
+  width: 48px;
+  color: var(--ifm-color-primary);
+}
+
+.featureIconWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  margin: 0 auto 0.75rem;
+  border-radius: 20px;
+  background: rgba(26, 115, 232, 0.08);
+}
+
+[data-theme='dark'] .featureIconWrap {
+  background: rgba(79, 158, 245, 0.12);
+}
