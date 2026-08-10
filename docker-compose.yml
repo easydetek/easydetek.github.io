@@ -1,0 +1,25 @@
+# EasyDetek 站点 —— docker compose 启动配置
+# 启动：  docker compose up -d --build
+# 停止：  docker compose down
+# 查看日志：docker compose logs -f
+services:
+  easydetek-site:
+    build:
+      context: .
+      # 部署到服务器时改成你的正式域名，例如：
+      #   args:
+      #     SITE_URL: https://docs.easydetek.com
+      args:
+        SITE_URL: http://localhost
+    image: easydetek-site:latest
+    container_name: easydetek-site
+    restart: unless-stopped
+    ports:
+      - "80:80"        # 宿主机 80 → 容器 80
+      # 如需改用其他端口（如 8080），改为 "8080:80"，并同步改 nginx 监听
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

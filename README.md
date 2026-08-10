@@ -81,34 +81,84 @@ npm run write-translations -- --locale en
 
 ## 七、部署上线
 
-### 方式 A：GitHub Actions 自动部署（推荐）
+### 方式 A：Docker 自部署（✅ 当前方案 / 推荐）
 
-1. 在 GitHub 创建仓库（建议组织仓库，名为 `<org>.github.io`，例如 `easydetek.github.io`）。
-2. 把本项目推送到仓库 `main` 分支：
-   ```bash
-   git init
-   git add .
-   git commit -m "init easydetek site"
-   git branch -M main
-   git remote add origin https://github.com/<org>/<repo>.git
-   git push -u origin main
-   ```
-3. 修改 `docusaurus.config.ts` 顶部的三个变量为你的真实信息：
-   ```ts
-   const ORGANIZATION_NAME = '<org>';        // GitHub 组织/用户名
-   const PROJECT_NAME = '<repo>';           // 仓库名
-   const SITE_URL = `https://<org>.github.io`;
-   ```
-4. 在仓库 **Settings → Pages**：
-   - **Source** 选择 `GitHub Actions`。
-5. 推送后 `.github/workflows/deploy.yml` 会自动构建中英文并发布。
-   访问地址：`https://<org>.github.io/`
+适合自有服务器，完全自主可控、访问快、不依赖第三方平台。
 
-> 若仓库不是 `<org>.github.io` 格式（例如叫 `docs`），`baseUrl` 会自动设为 `/docs/`，访问地址变为 `https://<org>.github.io/docs/`。
+#### 前提
+服务器已安装 Docker（≥ 20）与 Docker Compose（v2）。
 
-### 方式 B：自定义域名（可选）
+#### 一键启动
+```bash
+# 在项目根目录
+docker compose up -d --build
+```
+启动后访问：**http://服务器IP/**
 
-在仓库 **Settings → Pages → Custom domain** 填入域名（如 `docs.easydetek.com`），并把 `docusaurus.config.ts` 的 `url` 改为该域名。
+#### 常用命令
+```bash
+docker compose up -d --build   # 构建并启动（后台）
+docker compose down            # 停止并移除容器
+docker compose restart         # 重启
+docker compose logs -f         # 查看实时日志
+```
+
+#### 指定正式域名
+编辑 `docker-compose.yml`，把 `SITE_URL` 改为正式域名（影响 sitemap、社交分享卡片）：
+```yaml
+build:
+  context: .
+  args:
+    SITE_URL: https://docs.easydetek.com
+```
+重新构建生效：`docker compose up -d --build`
+
+#### 端口调整
+默认占用宿主机 80 端口。如需改用其他端口（如 8080），改 `docker-compose.yml`：
+```yaml
+ports:
+  - "8080:80"
+```
+
+#### 更新站点内容
+改完文档后，重新构建即可：
+```bash
+docker compose up -d --build
+```
+（nginx 已对 HTML 设置 `no-cache`，更新即时生效；静态资源带 hash 长缓存。）
+
+#### 反向代理 / HTTPS（可选）
+生产环境建议在前面加一层 Nginx 或 Caddy 做反向代理 + HTTPS：
+```nginx
+# 外层 Nginx 示例
+server {
+    listen 443 ssl http2;
+    server_name docs.easydetek.com;
+    # ssl 证书配置 ...
+    location / {
+        proxy_pass http://127.0.0.1:80;   # 指向容器映射端口
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+#### 部署架构
+```
+用户 → [Nginx/Caddy + HTTPS] → Docker 容器(nginx:80) → 静态文件
+```
+
+---
+
+### 方式 B：GitHub Pages（备选）
+
+若仍需 GitHub Pages 托管（代码已在 `easydetek/easydetek.github.io`）：
+
+1. 仓库 **Settings → Pages → Source** 选 `GitHub Actions`。
+2. 推送 main 分支，`.github/workflows/deploy.yml` 自动构建中英文并发布。
+3. 访问：`https://easydetek.github.io/`
+
+> 自定义域名：在 Pages 设置填入域名，并取消 `docusaurus.config.ts` 中 `SITE_URL` 的环境变量覆盖（直接写死域名）。
 
 ---
 
@@ -126,4 +176,4 @@ npm run write-translations -- --locale en
 
 ## 技术栈
 
-Docusaurus 3 · React 19 · TypeScript · Infima CSS · GitHub Actions
+Docusaurus 3 · React 19 · TypeScript · Infima CSS · Docker · nginx

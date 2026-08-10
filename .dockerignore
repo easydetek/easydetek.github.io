@@ -1,0 +1,22 @@
+# 构建产物 & 缓存（容器内重新构建，避免污染）
+build/
+.docusaurus/
+node_modules/
+
+# 本地 / 环境
+.git/
+.gitignore
+.env
+*.log
+
+# 编辑器
+.vscode/
+.idea/
+
+# Docker 自身（避免循环拷贝）
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# 文档/说明（可选，减小上下文体积）
+README.md

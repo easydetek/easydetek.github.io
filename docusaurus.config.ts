@@ -10,8 +10,9 @@ const ORGANIZATION_NAME = 'easydetek';
 // 仓库：若用 <org>.github.io 形式则 baseUrl 必须为 '/'；
 // 若仓库名为其他（如 docs），则改成对应仓库名并把 baseUrl 改为 '/<repo>/'
 const PROJECT_NAME = 'easydetek.github.io';
-// 站点最终访问地址（自定义域名：经 Cloudflare CDN 代理到 GitHub Pages）
-const SITE_URL = 'https://docs.easydetek.com';
+// 站点最终访问地址。优先读环境变量 SITE_URL，便于 Docker / CI 动态指定；
+// 不设置时回退到 GitHub Pages 默认地址。
+const SITE_URL = process.env.SITE_URL || `https://${ORGANIZATION_NAME}.github.io`;
 // 仓库地址（用于「编辑此页」、导航 GitHub 链接）
 const REPO_URL = `https://github.com/${ORGANIZATION_NAME}/${PROJECT_NAME}`;
 // ▲▲▲ 部署配置 ▲▲▲
@@ -61,8 +62,9 @@ const config: Config = {
         docs: {
           sidebarPath: './sidebars.ts',
           editUrl: `${REPO_URL}/tree/main/docs/`,
-          // 显示文档最后更新时间（依赖 Git 提交历史）
-          showLastUpdateTime: true,
+          // 显示文档最后更新时间（依赖 Git 提交历史）。
+          // 设环境变量 DISABLE_LAST_UPDATE=1 可关闭（如 Docker 构建无 git 时）。
+          showLastUpdateTime: process.env.DISABLE_LAST_UPDATE !== '1',
         },
         blog: {
           showReadingTime: true,
