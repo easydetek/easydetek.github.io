@@ -7,7 +7,7 @@ tags: [cluster, security, lighting]
 
 地下车库面积大、单台传感器覆盖不足，且布线成本高。**EDQ55G / EDQ55H 导轨集群方案**通过多机组网，实现大空间无缝覆盖与联动。
 
-<!-- truncate -->
+{/* truncate */}
 
 ## 场景需求
 

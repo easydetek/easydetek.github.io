@@ -32,7 +32,11 @@ const config: Config = {
   projectName: PROJECT_NAME,
 
   onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'warn',
+  markdown: {
+    hooks: {
+      onBrokenMarkdownLinks: 'warn',
+    },
+  },
 
   // 国际化：默认中文，提供英文
   i18n: {

@@ -7,7 +7,7 @@ tags: [lighting, smarthome]
 
 橱柜灯与小夜灯对模组的体积和功耗要求极高。本案例介绍 **EDC189C** 在这类紧凑型灯具中的应用。
 
-<!-- truncate -->
+{/* truncate */}
 
 ## 场景需求
 

@@ -7,7 +7,7 @@ tags: [smarthome, security]
 
 在高端 KNX 智能家居中，单一感应原理容易误报（风扇、阳光、宠物）。**EDQ25S-K 双鉴传感器**结合微波与红外，并通过 KNX 总线接入系统，可靠性显著提升。
 
-<!-- truncate -->
+{/* truncate */}
 
 ## 场景需求
 

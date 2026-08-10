@@ -7,7 +7,7 @@ tags: [cluster, smarthome]
 
 对于已建成不便重新布线的现场，**PLC（电力线载波）** 是理想的免布线通信方案。本案例介绍 EasyDetek 与力合微 PLC 方案的结合。
 
-<!-- truncate -->
+{/* truncate */}
 
 ## 场景需求
 
