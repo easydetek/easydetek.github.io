@@ -4,17 +4,17 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 // 此文件运行在 Node.js 中 —— 请勿使用浏览器端代码（BOM/DOM/JSX）
 
-// ▼▼▼ 部署前请修改以下三项为你的真实信息 ▼▼▼
+// ▼▼▼ 部署配置 ▼▼▼
 // 组织/用户名（GitHub organization 或 username）
 const ORGANIZATION_NAME = 'easydetek';
 // 仓库：若用 <org>.github.io 形式则 baseUrl 必须为 '/'；
 // 若仓库名为其他（如 docs），则改成对应仓库名并把 baseUrl 改为 '/<repo>/'
 const PROJECT_NAME = 'easydetek.github.io';
-// 站点最终访问地址（org 模式 = https://<org>.github.io）
-const SITE_URL = `https://${ORGANIZATION_NAME}.github.io`;
+// 站点最终访问地址（自定义域名：经 Cloudflare CDN 代理到 GitHub Pages）
+const SITE_URL = 'https://docs.easydetek.com';
 // 仓库地址（用于「编辑此页」、导航 GitHub 链接）
 const REPO_URL = `https://github.com/${ORGANIZATION_NAME}/${PROJECT_NAME}`;
-// ▲▲▲ 部署前请修改以上三项 ▲▲▲
+// ▲▲▲ 部署配置 ▲▲▲
 
 const config: Config = {
   title: 'EasyDetek',
