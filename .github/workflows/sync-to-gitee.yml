@@ -1,0 +1,51 @@
+# 将构建产物部署到 Gitee Pages（gh-pages 分支），并镜像源码到 Gitee main
+# 需要 GitHub Secrets: GITEE_TOKEN（Gitee 私人令牌）、GITEE_USERNAME（Gitee 用户名）
+name: Sync to Gitee
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-sync:
+    name: Build & Push to Gitee
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build website (中英文)
+        run: npm run build
+
+      # 1) 把构建产物推送到 Gitee 的 gh-pages 分支（供 Gitee Pages 托管）
+      - name: Deploy build to Gitee Pages (gh-pages)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          personal_token: ${{ secrets.GITEE_TOKEN }}
+          external_repository: ${{ secrets.GITEE_USERNAME }}/easydetek.gitee.io
+          publish_branch: gh-pages
+          publish_dir: ./build
+          # Gitee 用 git push，需要指明用户信息
+          user_name: 'github-actions'
+          user_email: 'actions@github.com'
+          commit_message: 'deploy: ${{ github.event.head_commit.message }}'
+
+      # 2) 镜像源码到 Gitee main 分支（方便国内团队查看/克隆源码）
+      - name: Mirror source to Gitee main
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          GITEE_USERNAME: ${{ secrets.GITEE_USERNAME }}
+        run: |
+          git remote add gitee "https://${GITEE_USERNAME}:${GITEE_TOKEN}@gitee.com/${GITEE_USERNAME}/easydetek.gitee.io.git"
+          git push -f gitee main
