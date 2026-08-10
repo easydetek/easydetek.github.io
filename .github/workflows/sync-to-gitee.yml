@@ -30,16 +30,19 @@ jobs:
 
       # 1) 把构建产物推送到 Gitee 的 gh-pages 分支（供 Gitee Pages 托管）
       - name: Deploy build to Gitee Pages (gh-pages)
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          personal_token: ${{ secrets.GITEE_TOKEN }}
-          external_repository: ${{ secrets.GITEE_USERNAME }}/easydetek.gitee.io
-          publish_branch: gh-pages
-          publish_dir: ./build
-          # Gitee 用 git push，需要指明用户信息
-          user_name: 'github-actions'
-          user_email: 'actions@github.com'
-          commit_message: 'deploy: ${{ github.event.head_commit.message }}'
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          GITEE_USERNAME: ${{ secrets.GITEE_USERNAME }}
+        run: |
+          cd build
+          git init -q
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git checkout -b gh-pages
+          git add -A
+          git commit -q -m "deploy: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          # Gitee 用 Token 内嵌 URL 认证，最稳
+          git push -f "https://${GITEE_USERNAME}:${GITEE_TOKEN}@gitee.com/${GITEE_USERNAME}/easydetek.gitee.io.git" gh-pages
 
       # 2) 镜像源码到 Gitee main 分支（方便国内团队查看/克隆源码）
       - name: Mirror source to Gitee main
