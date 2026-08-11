@@ -13,19 +13,19 @@ import Link from '@docusaurus/Link';
 import styles from './intro.module.css';
 
 <div className={styles.freqGrid}>
-  <Link className={styles.freqCard} to="/modules/edc116">
+  <Link className={styles.freqCard} to="/modules/5.8GHz/edc116">
     <strong>5.8GHz 模组</strong>
     <span>14 款｜吸顶灯、筒灯、灯丝灯、高空灯</span>
   </Link>
-  <Link className={styles.freqCard} to="/modules/edx106">
+  <Link className={styles.freqCard} to="/modules/10.5GHz/edx106">
     <strong>10.5GHz 模组</strong>
     <span>1 款｜智能门锁、猫眼</span>
   </Link>
-  <Link className={styles.freqCard} to="/modules/edq114">
+  <Link className={styles.freqCard} to="/modules/24GHz/edq114">
     <strong>24GHz 模组</strong>
     <span>13 款｜台灯、面板灯、镜子灯、智能马桶</span>
   </Link>
-  <Link className={styles.freqCard} to="/modules/edv151">
+  <Link className={styles.freqCard} to="/modules/60GHz/edv151">
     <strong>60GHz 模组</strong>
     <span>2 款｜体征监测、占位探测</span>
   </Link>

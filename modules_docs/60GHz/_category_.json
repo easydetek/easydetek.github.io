@@ -1,0 +1,10 @@
+{
+  "label": "60GHz 模组",
+  "position": 4,
+  "collapsed": true,
+  "collapsible": true,
+  "link": {
+    "type": "generated-index",
+    "description": "60GHz 毫米波模组（2 款）：体征监测、占位探测。"
+  }
+}
