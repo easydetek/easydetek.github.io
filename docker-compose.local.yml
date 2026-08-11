@@ -1,0 +1,24 @@
+# ============================================================
+# 本地预览专用 —— 仅 nginx 容器，无 Caddy（无 HTTPS）
+# 用途：本机开发预览，不需要域名/证书
+# 启动：docker compose -f docker-compose.local.yml up -d --build
+# 访问：http://localhost/
+# ============================================================
+
+services:
+  easydetek-site:
+    build:
+      context: .
+      args:
+        SITE_URL: http://localhost
+    image: easydetek-site:latest
+    container_name: easydetek-site-local
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

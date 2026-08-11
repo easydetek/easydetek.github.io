@@ -13,10 +13,13 @@ node_modules/
 .vscode/
 .idea/
 
-# Docker 自身（避免循环拷贝）
+# Docker / 部署配置（避免循环拷贝）
 Dockerfile
 docker-compose.yml
+docker-compose.local.yml
 .dockerignore
+Caddyfile
+DEPLOY.md
 
 # 文档/说明（可选，减小上下文体积）
 README.md
