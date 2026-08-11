@@ -1,0 +1,8 @@
+{
+  "label": "独立传感器",
+  "position": 1,
+  "link": {
+    "type": "doc",
+    "id": "intro"
+  }
+}

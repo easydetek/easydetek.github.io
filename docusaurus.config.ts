@@ -62,23 +62,11 @@ const config: Config = {
         docs: {
           sidebarPath: './sidebars.ts',
           editUrl: `${REPO_URL}/tree/main/docs/`,
-          // 显示文档最后更新时间（依赖 Git 提交历史）。
-          // 设环境变量 DISABLE_LAST_UPDATE=1 可关闭（如 Docker 构建无 git 时）。
           showLastUpdateTime: process.env.DISABLE_LAST_UPDATE !== '1',
-          // 文档版本化：已发版 1.0.0。
-          // 后续发新版本执行 npx docusaurus docs:version 2.0.0 即可累积。
-          includeCurrentVersion: true,
           lastVersion: '1.0.0',
           versions: {
-            current: {
-              label: 'Next（开发版）',
-              path: 'next',
-              banner: 'unreleased',
-            },
-            '1.0.0': {
-              label: '1.0.0',
-              banner: 'none',
-            },
+            current: {label: 'Next（开发版）', path: 'next', banner: 'unreleased'},
+            '1.0.0': {label: '1.0.0', banner: 'none'},
           },
         },
         blog: {
@@ -98,6 +86,79 @@ const config: Config = {
           customCss: './src/css/custom.css',
         },
       } satisfies Preset.Options,
+    ],
+  ],
+
+  // 多 docs 实例：各产品线独立版本化、独立维护。
+  // 新增产品线流程：① 建目录 xxx_docs/ ② 建 sidebars.xxx.ts ③ 在此加实例 ④ navbar 加入口
+  plugins: [
+    // 模组产品线
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'modules',
+        path: 'modules_docs',
+        routeBasePath: 'modules',
+        sidebarPath: './sidebars.modules.ts',
+        editUrl: `${REPO_URL}/tree/main/modules_docs/`,
+        showLastUpdateTime: process.env.DISABLE_LAST_UPDATE !== '1',
+        lastVersion: '1.0.0',
+        versions: {
+          current: {label: 'Next', path: 'next', banner: 'unreleased'},
+          '1.0.0': {label: '1.0.0', banner: 'none'},
+        },
+      },
+    ],
+    // 独立传感器产品线
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'sensors',
+        path: 'sensors_docs',
+        routeBasePath: 'sensors',
+        sidebarPath: './sidebars.sensors.ts',
+        editUrl: `${REPO_URL}/tree/main/sensors_docs/`,
+        showLastUpdateTime: process.env.DISABLE_LAST_UPDATE !== '1',
+        lastVersion: '1.0.0',
+        versions: {
+          current: {label: 'Next', path: 'next', banner: 'unreleased'},
+          '1.0.0': {label: '1.0.0', banner: 'none'},
+        },
+      },
+    ],
+    // 配件产品线
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'accessories',
+        path: 'accessories_docs',
+        routeBasePath: 'accessories',
+        sidebarPath: './sidebars.accessories.ts',
+        editUrl: `${REPO_URL}/tree/main/accessories_docs/`,
+        showLastUpdateTime: process.env.DISABLE_LAST_UPDATE !== '1',
+        lastVersion: '1.0.0',
+        versions: {
+          current: {label: 'Next', path: 'next', banner: 'unreleased'},
+          '1.0.0': {label: '1.0.0', banner: 'none'},
+        },
+      },
+    ],
+    // 开源生态产品线
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'opensource',
+        path: 'opensource_docs',
+        routeBasePath: 'opensource',
+        sidebarPath: './sidebars.opensource.ts',
+        editUrl: `${REPO_URL}/tree/main/opensource_docs/`,
+        showLastUpdateTime: process.env.DISABLE_LAST_UPDATE !== '1',
+        lastVersion: '1.0.0',
+        versions: {
+          current: {label: 'Next', path: 'next', banner: 'unreleased'},
+          '1.0.0': {label: '1.0.0', banner: 'none'},
+        },
+      },
     ],
   ],
 
@@ -123,16 +184,59 @@ const config: Config = {
         src: 'img/logo-icon.png',
       },
       items: [
+        // 各产品线入口（每个独立 docs 实例）
         {
           type: 'docSidebar',
-          sidebarId: 'docsSidebar',
+          sidebarId: 'modulesSidebar',
+          docsPluginId: 'modules',
           position: 'left',
-          label: '产品文档',
+          label: '模组',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'sensorsSidebar',
+          docsPluginId: 'sensors',
+          position: 'left',
+          label: '传感器',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'accessoriesSidebar',
+          docsPluginId: 'accessories',
+          position: 'left',
+          label: '配件',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'opensourceSidebar',
+          docsPluginId: 'opensource',
+          position: 'left',
+          label: '开源生态',
         },
         {to: '/blog', label: '应用案例', position: 'left'},
         {to: '/open-source', label: '开源项目', position: 'left'},
+        // 各产品线独立版本下拉（右侧）
         {
           type: 'docsVersionDropdown',
+          docsPluginId: 'modules',
+          position: 'right',
+          dropdownActiveClassDisabled: true,
+        },
+        {
+          type: 'docsVersionDropdown',
+          docsPluginId: 'sensors',
+          position: 'right',
+          dropdownActiveClassDisabled: true,
+        },
+        {
+          type: 'docsVersionDropdown',
+          docsPluginId: 'accessories',
+          position: 'right',
+          dropdownActiveClassDisabled: true,
+        },
+        {
+          type: 'docsVersionDropdown',
+          docsPluginId: 'opensource',
           position: 'right',
           dropdownActiveClassDisabled: true,
         },
@@ -156,16 +260,18 @@ const config: Config = {
       },
       links: [
         {
-          title: '产品文档',
+          title: '产品线',
           items: [
-            {label: '快速开始', to: '/docs/intro'},
-            {label: '产品总览', to: '/docs/产品手册'},
-            {label: '开发对接', to: '/docs/category/开发对接'},
+            {label: '模组', to: '/modules/intro'},
+            {label: '传感器', to: '/sensors/intro'},
+            {label: '配件', to: '/accessories/intro'},
+            {label: '开源生态', to: '/opensource/intro'},
           ],
         },
         {
-          title: '资源',
+          title: '通用',
           items: [
+            {label: '快速开始', to: '/docs/intro'},
             {label: '应用案例', to: '/blog'},
             {label: '开源项目', to: '/open-source'},
             {

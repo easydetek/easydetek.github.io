@@ -36,5 +36,5 @@ tags: [lighting, smarthome]
 - ✅ 人离开后延时自动关灯
 
 :::info
-完整规格与接线定义见 [EDC116 产品手册](/docs/产品手册/edc116-edc189c)。
+完整规格与接线定义见 [EDC116 产品手册](/modules/edc116-edc189c)。
 :::

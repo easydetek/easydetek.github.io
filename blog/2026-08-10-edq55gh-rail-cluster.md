@@ -28,5 +28,5 @@ tags: [cluster, security, lighting]
 - 🛡️ **无盲区**：多机覆盖拼接
 
 :::info
-集群组网技术细节见 [导轨集群组网](/docs/开发对接/cluster-network)。
+集群组网技术细节见 [导轨集群组网](/sensors/cluster-network)。
 :::

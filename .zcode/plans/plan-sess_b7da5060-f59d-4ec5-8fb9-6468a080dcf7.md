@@ -1,82 +1,98 @@
-# EasyDetek 站点：借鉴 ESP-IDF 功能实施计划
+# 文档系统重构计划：按产品线拆分多 docs 实例
 
-基于 Docusaurus 3.10.2 现有站点，实现 4 个功能。按"低风险→需定制"排序，分 4 个阶段执行。
+## 架构设计
 
+将当前单 docs 实例（`/docs`）拆分为 **5 个独立 docs 实例**，每个独立版本化、独立维护：
+
+| 实例 id | routeBasePath | 内容 | 版本化 |
+|---------|--------------|------|--------|
+| `default` | `/docs` | 通用文档（快速开始、产品总览） | ✅ 独立 |
+| `modules` | `/modules` | **模组**产品线（EDC116/EDC189C + 对应开发对接） | ✅ 独立 |
+| `sensors` | `/sensors` | **独立传感器**产品线（EDV532/EDQ55G/H/EDQ25S-K + 对应开发对接） | ✅ 独立 |
+| `accessories` | `/accessories` | **配件**产品线（空框架，待填） | ✅ 独立 |
+| `opensource` | `/opensource` | **开源生态**产品线（空框架，待填） | ✅ 独立 |
+
+导航栏布局：
+```
+[Logo] | 通用文档 | 模组 | 独立传感器 | 配件 | 开源生态 | 应用案例 | ... | [版本下拉] [语言] [GitHub]
+                                                                ↑ 当前产品线的独立版本下拉
+```
+
+## 实施步骤
+
+### 阶段 1：新建产品线目录结构与内容迁移
+
+创建 4 个新内容目录，把现有产品文档拆分迁移进去（开发对接也按产品线拆入）：
+
+- `modules_docs/` —— EDC116/EDC189C + 模组相关开发对接
+- `sensors_docs/` —— EDV532/EDQ55G/EDQ55H/EDQ25S-K + 传感器相关开发对接
+- `accessories_docs/` —— 空框架（intro + _category_）
+- `opensource_docs/` —— 空框架（intro + _category_）
+- `docs/` 保留 —— 只留通用文档（快速开始 + 产品总览），删除产品手册和开发对接
+
+每个新目录包含独立的 `_category_.json` 和 frontmatter 规范，**团队未来新增产品只需在该目录加 .md 文件**。
+
+### 阶段 2：创建独立 sidebar 文件
+
+- `sidebars.ts`（已有，保留，通用文档用）
+- `sidebars.modules.ts`（新建）
+- `sidebars.sensors.ts`（新建）
+- `sidebars.accessories.ts`（新建）
+- `sidebars.opensource.ts`（新建）
+
+### 阶段 3：配置 docusaurus.config.ts
+
+- `presets` 的 docs 块保持为默认实例（通用文档）
+- 新增顶层 `plugins` 数组，声明 4 个 `@docusaurus/plugin-content-docs` 实例（modules/sensors/accessories/opensource）
+- `navbar.items` 调整：每个产品线一个 `docSidebar` 入口（带 `docsPluginId`），版本下拉用**自定义组件**显示当前激活产品线的版本（或先每个产品线一个下拉）
+- `footer` 链接更新指向新路径
+
+### 阶段 4：修复所有跨实例链接
+
+当前文档内有绝对路径 `/docs/产品手册/xxx`、`/docs/开发对接/xxx` 等链接，拆分后会失效。需要全部更新为新的实例路径（如 `/modules/edc116`、`/sensors/edv532`）。
+
+受影响文件：intro.md、各产品文档、快速开始文档，以及它们的英文翻译。
+
+### 阶段 5：清理旧版本快照 + 为每个产品线发版 v1.0.0
+
+- 删除旧的全局 `versioned_docs/version-1.0.0/`、`versioned_sidebars/`、`versions.json`（重构后失效）
+- 对每个产品线执行 `npx docusaurus docs:version:modules 1.0.0` 等命令，创建各自的 v1.0.0 快照
+- 默认实例（通用文档）执行 `npx docusaurus docs:version 1.0.0`
+
+### 阶段 6：更新 i18n
+
+运行 `npx docusaurus write-translations` 重新生成各实例的翻译骨架，更新英文翻译路径。
+
+### 阶段 7：构建验证 + Docker 重建 + 提交
+
+每个阶段后构建验证，最终 Docker 重建并提交。
+
+## 团队工作流（重构后）
+
+产品经理/管理员新增一个产品型号的完整流程：
+
+```bash
+# 1. 在对应产品线目录新建 Markdown
+echo '---
+sidebar_position: 5
 ---
+# EDV999 新产品
+...' > sensors_docs/edv999.md
 
-## 阶段 1️⃣ 文档版本化能力（原生，最简单）
+# 2. 提交
+git add . && git commit -m "docs: 新增 EDV999"
 
-**目标**：配置版本化能力 + 导航栏版本下拉，但不真正发版（等固件发布时再 `docs:version`）。
+# 3. 重建部署
+docker compose up -d --build
+```
 
-**改动**：
-1. `docusaurus.config.ts` 的 `docs` 配置块加版本化选项：
-   - `includeCurrentVersion: true`
-   - `lastVersion: 'current'`
-   - `versions: { current: { label: '最新', banner: 'unreleased' } }`
-2. `navbar.items` 在 `localeDropdown` 前插入：
-   - `{ type: 'docsVersionDropdown', position: 'right', dropdownActiveClassDisabled: true }`
+发版（锁定历史版本）：
+```bash
+npx docusaurus docs:version:sensors 2.0.0
+```
 
-**效果**：导航栏出现版本下拉，当前只有"最新"一个版本。未来固件发布时跑 `npx docusaurus docs:version 1.0.0` 即可锁定历史版本。
+## 不做的事
 
----
-
-## 阶段 2️⃣ 文档反馈按钮（swizzle + 邮件）
-
-**目标**：每篇文档底部显示"此文档对您有帮助吗？👍 👎"，点击后打开预填邮件。
-
-**改动**：
-1. 执行 `npx docusaurus swizzle @docusaurus/theme-classic DocItem/Footer --eject`
-   - 生成 `src/theme/DocItem/Footer/index.tsx`
-2. 在该组件内追加反馈区块 JSX：
-   - 用 `useDoc()` 取 `metadata.title` 和 `metadata.permalink` 作邮件正文标识
-   - 两个按钮"有用 👍"/"无用 👎"，点击跳转 `mailto:support@easydetek.com?subject=文档反馈&body=...`
-3. 新建 `src/theme/DocItem/Footer/styles.module.css` 样式文件
-4. 关键：反馈区块放在 `canDisplayFooter` 判断之外，确保每篇文档都显示（即使无 tag/edit 信息）
-
----
-
-## 阶段 3️⃣ 产品型号分类页（产品手册页内 Tabs）
-
-**目标**：产品手册分类页内按产品线分标签页（EDV 微波传感器 / EDQ 成品传感器 / EDC 嵌入模组），类似 ESP-IDF 按芯片分类。
-
-**改动**：
-1. 新建 `docs/产品手册/index.md` —— 使用 MDX 的 `<Tabs>`/`<TabItem>` 组件按产品线分页：
-   - Tab 1「微波传感器」：EDV531、EDV532
-   - Tab 2「成品传感器」：EDQ55G/H、EDQ25S-K
-   - Tab 3「嵌入模组」：EDC116、EDC189C
-   - 每个 Tab 内用卡片链接到对应型号文档页
-2. 调整 `docs/产品手册/_category_.json`，让分类落地页指向这个 index
-3. 不改动现有各型号文档页（保持独立可访问）
-
-**效果**：进入"产品手册"看到按产品线分类的卡片入口，点击进入具体型号。
-
----
-
-## 阶段 4️⃣ PWA 离线访问（plugin）
-
-**目标**：用户访问站点后自动缓存，断网仍可浏览。
-
-**改动**：
-1. `npm install docusaurus-plugin-offline`
-2. `docusaurus.config.ts` 新增顶层 `plugins: ['docusaurus-plugin-offline']`
-3. 构建验证（PWA 需 HTTPS 才生效，本地 http 仅测试不报错即可）
-
-> 注：PWA 的 service worker 仅在生产环境（HTTPS 或 localhost）生效。服务器部署后通过 Caddy 的 HTTPS 即可正常工作。
-
----
-
-## 验证 & 收尾
-
-每个阶段完成后：
-1. `npm run build` 确认构建通过
-2. Docker 重建 `docker compose -f docker-compose.local.yml up -d --build`
-3. `curl` 验证关键页面 HTTP 200
-4. 全部完成后统一 git commit（一个阶段一个 commit，便于回溯）
-
-## 不做的事（明确边界）
-
-- ❌ 不换技术栈（保留 Docusaurus，不转 Sphinx）
-- ❌ 不做全局型号筛选下拉（改为产品页内分类，更轻量）
-- ❌ 不接 GA/自建反馈接口（用邮件，零后端）
-- ❌ 不现在发版（只配能力，固件发布时再 `docs:version`）
-- ❌ 不做 ZIP 整站下载（PWA 已覆盖离线需求）
+- ❌ 不加 CMS 后台（保持 Git+Markdown 工作流）
+- ❌ 不换技术栈（保持 Docusaurus）
+- ❌ 配件/开源生态只建空框架，内容由团队后续填写

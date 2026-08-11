@@ -42,5 +42,7 @@ Multi-device coordinated solutions for large-area or high-reliability scenarios.
 | Custom prototyping | EDV531 | Flexible & customizable |
 
 :::info
-This is an overview. For full specs of each model, see the [Product Docs](/en/docs/产品手册).
+This is an overview. For full specs, enter the relevant product line:
+- Modules (EDC116/EDC189C) → [Modules](/en/modules/intro)
+- Sensors (EDV532/EDQ55G/H/EDQ25S-K) → [Sensors](/en/sensors/intro)
 :::
