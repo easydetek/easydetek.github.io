@@ -19,7 +19,7 @@ import TabItem from '@theme/TabItem';
 
 <Tabs>
   <TabItem value="product" label="I want to select / buy" default>
-    Browse specs of each model in [Product Docs](/en/docs/category/产品手册), or check [Case Studies](/en/blog) for similar scenarios.
+    Browse specs of each model in [Product Docs](/en/docs/产品手册), or check [Case Studies](/en/blog) for similar scenarios.
   </TabItem>
   <TabItem value="dev" label="I'm a developer / integrator">
     Jump to the [Integration](/en/docs/category/开发对接) section for protocols, wiring and example code.

@@ -1,47 +1,48 @@
 /**
  * EasyDetek 全局样式
- * 基于 Infima 框架，覆盖品牌主题色。
- * 品牌主色：科技蓝（雷达 / 微波传感），强调色：电光青。
+ * 配色对齐官网 www.easydetek.com 主色调：
+ *   主色 深蓝 #0049a9（官网核心品牌色）
+ *   点缀 金黄 #f0d000（官网 logo 中的信号元素色）
  */
 
 :root {
-  /* 品牌主色（明亮科技蓝） */
-  --ifm-color-primary: #1a73e8;
-  --ifm-color-primary-dark: #1767cc;
-  --ifm-color-primary-darker: #1661c0;
-  --ifm-color-primary-darkest: #13539c;
-  --ifm-color-primary-light: #3184ea;
-  --ifm-color-primary-lighter: #3d8dec;
-  --ifm-color-primary-lightest: #60a4f0;
+  /* 品牌主色（官网深蓝） */
+  --ifm-color-primary: #0049a9;
+  --ifm-color-primary-dark: #00409a;
+  --ifm-color-primary-darker: #003c91;
+  --ifm-color-primary-darkest: #003277;
+  --ifm-color-primary-light: #1a5db5;
+  --ifm-color-primary-lighter: #2666bc;
+  --ifm-color-primary-lightest: #4d83cd;
 
-  /* 品牌强调色（电光青，用于点缀） */
-  --ed-accent: #00b8d4;
-  --ed-hero-gradient: linear-gradient(135deg, #0a2a4f 0%, #0d3d6e 45%, #1473e6 100%);
+  /* 品牌强调色（金黄，源自 logo 信号元素） */
+  --ed-accent: #f0d000;
+  --ed-hero-gradient: linear-gradient(135deg, #0a1f3a 0%, #003277 50%, #0049a9 100%);
 
   --ifm-code-font-size: 95%;
   --ifm-font-family-base:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial,
     sans-serif;
-  --docusaurus-highlighted-code-line-bg: rgba(26, 115, 232, 0.12);
+  --docusaurus-highlighted-code-line-bg: rgba(0, 73, 169, 0.12);
 }
 
 [data-theme='dark'] {
-  /* 深色模式：使用更亮的主色以保证对比度 */
-  --ifm-color-primary: #4f9ef5;
-  --ifm-color-primary-dark: #3a8ef3;
-  --ifm-color-primary-darker: #2f86f1;
-  --ifm-color-primary-darkest: #1a6fd6;
-  --ifm-color-primary-light: #66aff7;
-  --ifm-color-primary-lighter: #73b6f8;
-  --ifm-color-primary-lightest: #9bcdfa;
-  --ed-hero-gradient: linear-gradient(135deg, #04122a 0%, #072347 50%, #0d3d6e 100%);
-  --docusaurus-highlighted-code-line-bg: rgba(79, 158, 245, 0.2);
+  /* 深色模式：主色提亮以保证对比度 */
+  --ifm-color-primary: #4d83cd;
+  --ifm-color-primary-dark: #3a72c4;
+  --ifm-color-primary-darker: #2f69bf;
+  --ifm-color-primary-darkest: #1a5db5;
+  --ifm-color-primary-light: #6696d4;
+  --ifm-color-primary-lighter: #739fd8;
+  --ifm-color-primary-lightest: #9db8e3;
+  --ed-hero-gradient: linear-gradient(135deg, #04122a 0%, #072347 50%, #0a3a7a 100%);
+  --docusaurus-highlighted-code-line-bg: rgba(77, 131, 205, 0.2);
 }
 
-/* 页脚品牌行 */
+/* 页脚品牌行（对齐官网页脚深色） */
 .footer--dark {
-  --ifm-footer-background-color: #06182e;
+  --ifm-footer-background-color: #0a1f3a;
   --ifm-footer-color: #c4d4e6;
   --ifm-footer-link-hover-color: var(--ifm-color-primary-lightest);
 }
@@ -51,11 +52,13 @@
   background-image: var(--ed-hero-gradient);
   color: #fff;
 }
+.heroBanner .hero__title { color: #fff; }
+.heroBanner .hero__subtitle { color: rgba(255, 255, 255, 0.88); }
 
-/* 让首页 Hero 在渐变上保持可读性 */
-.heroBanner .hero__title {
-  color: #fff;
+/* 导航栏 logo 略微放大（纯图标，无文字需更显眼） */
+.navbar__logo img {
+  height: 40px;
 }
-.heroBanner .hero__subtitle {
-  color: rgba(255, 255, 255, 0.88);
+.navbar__title {
+  display: none; /* 隐藏导航栏文字，只保留 logo */
 }

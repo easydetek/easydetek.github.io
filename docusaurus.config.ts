@@ -20,7 +20,7 @@ const REPO_URL = `https://github.com/${ORGANIZATION_NAME}/${PROJECT_NAME}`;
 const config: Config = {
   title: 'EasyDetek',
   tagline: '专业微波 / 毫米波雷达传感方案',
-  favicon: 'img/favicon.svg',
+  favicon: 'img/favicon.png',
 
   future: {
     v4: true,
@@ -65,6 +65,16 @@ const config: Config = {
           // 显示文档最后更新时间（依赖 Git 提交历史）。
           // 设环境变量 DISABLE_LAST_UPDATE=1 可关闭（如 Docker 构建无 git 时）。
           showLastUpdateTime: process.env.DISABLE_LAST_UPDATE !== '1',
+          // 文档版本化：只配置能力，暂不发版。
+          // 固件正式发布时执行 npx docusaurus docs:version 1.0.0 锁定历史版本。
+          includeCurrentVersion: true,
+          lastVersion: 'current',
+          versions: {
+            current: {
+              label: '最新',
+              banner: 'unreleased',
+            },
+          },
         },
         blog: {
           showReadingTime: true,
@@ -86,17 +96,26 @@ const config: Config = {
     ],
   ],
 
+  // 本地离线搜索（无需 Algolia，构建时生成索引，完全离线可用）
+  themes: ['@easyops-cn/docusaurus-search-local'],
+
   themeConfig: {
-    image: 'img/social-card.svg',
+    image: 'img/logo-full.png',
+    // 本地搜索配置（中英文双语分词）
+    search: {
+      hashed: true,
+      language: ['zh', 'en'],
+      indexDocs: true,
+      indexBlog: true,
+      indexPages: true,
+    },
     colorMode: {
       respectPrefersColorScheme: true,
     },
     navbar: {
-      title: 'EasyDetek',
       logo: {
         alt: 'EasyDetek Logo',
-        src: 'img/logo.svg',
-        srcDark: 'img/logo-dark.svg',
+        src: 'img/logo-icon.png',
       },
       items: [
         {
@@ -107,6 +126,11 @@ const config: Config = {
         },
         {to: '/blog', label: '应用案例', position: 'left'},
         {to: '/open-source', label: '开源项目', position: 'left'},
+        {
+          type: 'docsVersionDropdown',
+          position: 'right',
+          dropdownActiveClassDisabled: true,
+        },
         {
           type: 'localeDropdown',
           position: 'right',
@@ -122,15 +146,15 @@ const config: Config = {
       style: 'dark',
       logo: {
         alt: 'EasyDetek Logo',
-        src: 'img/logo-dark.svg',
-        height: 36,
+        src: 'img/logo-white.png',
+        height: 48,
       },
       links: [
         {
           title: '产品文档',
           items: [
             {label: '快速开始', to: '/docs/intro'},
-            {label: '产品总览', to: '/docs/category/产品手册'},
+            {label: '产品总览', to: '/docs/产品手册'},
             {label: '开发对接', to: '/docs/category/开发对接'},
           ],
         },

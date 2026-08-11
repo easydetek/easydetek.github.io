@@ -42,5 +42,5 @@ Multi-device coordinated solutions for large-area or high-reliability scenarios.
 | Custom prototyping | EDV531 | Flexible & customizable |
 
 :::info
-This is an overview. For full specs of each model, see the [Product Docs](/en/docs/category/产品手册).
+This is an overview. For full specs of each model, see the [Product Docs](/en/docs/产品手册).
 :::

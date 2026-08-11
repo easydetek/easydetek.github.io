@@ -19,7 +19,7 @@ import TabItem from '@theme/TabItem';
 
 <Tabs>
   <TabItem value="product" label="我想选型 / 买产品" default>
-    从 [产品手册](/docs/category/产品手册) 浏览各型号规格，或参考 [应用案例](/blog) 查看同类场景的方案。
+    从 [产品手册](/docs/产品手册) 浏览各型号规格，或参考 [应用案例](/blog) 查看同类场景的方案。
   </TabItem>
   <TabItem value="dev" label="我是开发者 / 集成商">
     直接看 [开发对接](/docs/category/开发对接) 章节，里面有协议、接线与对接示例代码。
