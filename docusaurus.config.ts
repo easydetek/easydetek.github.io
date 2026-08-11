@@ -217,25 +217,25 @@ const config: Config = {
         {to: '/open-source', label: '开源项目', position: 'left'},
         // 各产品线独立版本下拉（右侧）
         {
-          type: 'docsVersionDropdown',
+          type: 'custom-contextAwareDocsVersionDropdown',
           docsPluginId: 'modules',
           position: 'right',
           dropdownActiveClassDisabled: true,
         },
         {
-          type: 'docsVersionDropdown',
+          type: 'custom-contextAwareDocsVersionDropdown',
           docsPluginId: 'sensors',
           position: 'right',
           dropdownActiveClassDisabled: true,
         },
         {
-          type: 'docsVersionDropdown',
+          type: 'custom-contextAwareDocsVersionDropdown',
           docsPluginId: 'accessories',
           position: 'right',
           dropdownActiveClassDisabled: true,
         },
         {
-          type: 'docsVersionDropdown',
+          type: 'custom-contextAwareDocsVersionDropdown',
           docsPluginId: 'opensource',
           position: 'right',
           dropdownActiveClassDisabled: true,
