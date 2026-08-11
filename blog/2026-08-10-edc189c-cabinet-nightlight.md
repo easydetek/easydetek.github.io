@@ -29,5 +29,5 @@ tags: [lighting, smarthome]
 - **小夜灯**：模组装于灯体，检测到人体移动后以低亮度点亮，避免强光刺眼。
 
 :::info
-详细规格见 [EDC189C 产品手册](/modules/edc116-edc189c)。
+详细规格见 [EDC189C 产品手册](/modules/edc189c)。
 :::

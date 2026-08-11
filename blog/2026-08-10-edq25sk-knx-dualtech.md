@@ -30,5 +30,5 @@ tags: [smarthome, security]
 | 布防时段触发 | 推送安防告警 |
 
 :::info
-KNX 工程对接方法见 [KNX 对接指南](/sensors/knx-integration)。
+KNX 工程对接方法见 [KNX 对接指南](/sensors/intro)。
 :::

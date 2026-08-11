@@ -104,7 +104,7 @@ const config: Config = {
         showLastUpdateTime: process.env.DISABLE_LAST_UPDATE !== '1',
         lastVersion: '1.0.0',
         versions: {
-          current: {label: 'Next', path: 'next', banner: 'unreleased'},
+          current: {label: 'Next（开发版）', path: 'next', banner: 'unreleased'},
           '1.0.0': {label: '1.0.0', banner: 'none'},
         },
       },
@@ -121,7 +121,7 @@ const config: Config = {
         showLastUpdateTime: process.env.DISABLE_LAST_UPDATE !== '1',
         lastVersion: '1.0.0',
         versions: {
-          current: {label: 'Next', path: 'next', banner: 'unreleased'},
+          current: {label: 'Next（开发版）', path: 'next', banner: 'unreleased'},
           '1.0.0': {label: '1.0.0', banner: 'none'},
         },
       },
@@ -138,7 +138,7 @@ const config: Config = {
         showLastUpdateTime: process.env.DISABLE_LAST_UPDATE !== '1',
         lastVersion: '1.0.0',
         versions: {
-          current: {label: 'Next', path: 'next', banner: 'unreleased'},
+          current: {label: 'Next（开发版）', path: 'next', banner: 'unreleased'},
           '1.0.0': {label: '1.0.0', banner: 'none'},
         },
       },
@@ -155,7 +155,7 @@ const config: Config = {
         showLastUpdateTime: process.env.DISABLE_LAST_UPDATE !== '1',
         lastVersion: '1.0.0',
         versions: {
-          current: {label: 'Next', path: 'next', banner: 'unreleased'},
+          current: {label: 'Next（开发版）', path: 'next', banner: 'unreleased'},
           '1.0.0': {label: '1.0.0', banner: 'none'},
         },
       },

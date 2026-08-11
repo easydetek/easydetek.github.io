@@ -7,14 +7,10 @@ slug: /intro
 
 EasyDetek 独立传感器成品，即装即用，含外壳与接线端子，面向工程批量应用。
 
-## 产品列表
+:::info 数据同步中
+本产品线详细型号规格正从产品知识库同步中。当前请参考：
+- [模组产品线](/modules/intro)（含 EDC/EDQ/EDV 全系列雷达模组）
+- [配件产品线](/accessories/intro)（高空感应配件）
 
-- [EDV532 微波存在传感器](./edv532) —— 高性能微动检测
-- [EDQ55G / EDQ55H 导轨集群传感器](./edq55g-edq55h) —— 大空间多机组网
-- [EDQ25S-K 双鉴 KNX 传感器](./edq25s-k) —— 雷达+红外双鉴，KNX 总线
-
-## 开发对接
-
-- [串口（UART）对接示例](./uart-example) —— EDV 系列串口通信
-- [KNX 对接指南](./knx-integration) —— EDQ25S-K 接入 KNX 系统
-- [导轨集群组网](./cluster-network) —— EDQ55G/H 多机协同
+如需特定型号规格，请联系 business@easydetek.com。
+:::
