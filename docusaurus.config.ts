@@ -65,14 +65,19 @@ const config: Config = {
           // 显示文档最后更新时间（依赖 Git 提交历史）。
           // 设环境变量 DISABLE_LAST_UPDATE=1 可关闭（如 Docker 构建无 git 时）。
           showLastUpdateTime: process.env.DISABLE_LAST_UPDATE !== '1',
-          // 文档版本化：只配置能力，暂不发版。
-          // 固件正式发布时执行 npx docusaurus docs:version 1.0.0 锁定历史版本。
+          // 文档版本化：已发版 1.0.0。
+          // 后续发新版本执行 npx docusaurus docs:version 2.0.0 即可累积。
           includeCurrentVersion: true,
-          lastVersion: 'current',
+          lastVersion: '1.0.0',
           versions: {
             current: {
-              label: '最新',
+              label: 'Next（开发版）',
+              path: 'next',
               banner: 'unreleased',
+            },
+            '1.0.0': {
+              label: '1.0.0',
+              banner: 'none',
             },
           },
         },
