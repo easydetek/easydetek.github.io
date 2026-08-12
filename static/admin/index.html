@@ -6,6 +6,21 @@
   <meta name="robots" content="noindex" />
   <title>EasyDetek 文档管理后台</title>
   <link rel="icon" href="/img/favicon.png" />
+  <style>
+    /* 替换 Decap CMS 默认 logo 为 EasyDetek logo */
+    .nc-githubAuthenticationPage-logo,
+    img[src*="decap"],
+    img[src*="netlifycms"],
+    img[src*="logo"] {
+      content: url('/img/logo-navbar.png') !important;
+      max-height: 50px !important;
+      width: auto !important;
+    }
+    /* 登录页标题 */
+    .nc-githubAuthenticationPage-text {
+      font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    }
+  </style>
 </head>
 <body>
   <script src="https://unpkg.com/decap-cms@^3.6.0/dist/decap-cms.js"></script>
@@ -14,6 +29,8 @@
     if (window.CMS) {
       window.CMS.registerLocale('zh', {});
     }
+    // 替换页面标题
+    document.title = 'EasyDetek 文档管理后台';
   </script>
 </body>
 </html>
