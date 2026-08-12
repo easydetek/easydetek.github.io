@@ -1,7 +1,7 @@
 {
   "version.label": {
-    "message": "1.0.0",
-    "description": "The label for version 1.0.0"
+    "message": "Next",
+    "description": "The label for version current"
   },
   "sidebar.sensorsSidebar.category.AC 强电输出": {
     "message": "AC 强电输出",

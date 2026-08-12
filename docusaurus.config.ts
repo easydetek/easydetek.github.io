@@ -102,11 +102,7 @@ const config: Config = {
         sidebarPath: './sidebars.modules.ts',
         editUrl: `${REPO_URL}/tree/main/modules_docs/`,
         showLastUpdateTime: process.env.DISABLE_LAST_UPDATE !== '1',
-        lastVersion: '1.0.0',
-        versions: {
-          current: {label: 'Next（开发版）', path: 'next', banner: 'unreleased'},
-          '1.0.0': {label: '1.0.0', banner: 'none'},
-        },
+
       },
     ],
     // 独立传感器产品线
@@ -132,11 +128,7 @@ const config: Config = {
         sidebarPath: './sidebars.accessories.ts',
         editUrl: `${REPO_URL}/tree/main/accessories_docs/`,
         showLastUpdateTime: process.env.DISABLE_LAST_UPDATE !== '1',
-        lastVersion: '1.0.0',
-        versions: {
-          current: {label: 'Next（开发版）', path: 'next', banner: 'unreleased'},
-          '1.0.0': {label: '1.0.0', banner: 'none'},
-        },
+
       },
     ],
     // 开源生态产品线
