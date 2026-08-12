@@ -8,22 +8,35 @@
   <link rel="icon" href="/img/favicon.png" />
   <style>
     /*
-     * EasyDetek 登录页 Logo 处理说明：
+     * Decap CMS 3.6.0 登录页 Logo 渲染逻辑（源码分析结论）
+     * ------------------------------------------------------------------
+     * 登录页主渲染函数 mP（对应 StyledAuthenticationPage <section>）：
+     *   const u = logoUrl || logo?.src;
+     *   <section>
+     *     hP(u)                                              // 顶部 logo 区
+     *     ...(错误文案 / 登录按钮 / 站点链接)
+     *     {u ? <NetlifyCreditIcon size="100px" type="decap-cms"/> : null}  // ★底部信用图标
+     *   </section>
      *
-     * Decap CMS 3.6.0 的登录页 logo 渲染逻辑（见 cD 函数）：
-     *   - 若 config.yml 设置了 logo_url：渲染 <img alt="Logo" src=logo_url>
-     *     （包在 styled-component 包裹层里，class 为哈希值）
-     *   - 若未设置 logo_url：渲染内联 SVG（Icon 组件，type="decap-cms"，300px 箭头图标）
+     * hP(u) 分支：
+     *   - u 存在 → <CustomIconWrapper width:300px><img src=u alt="Logo"></wrapper>  ← EasyDetek logo（保留）
+     *   - u 不存在 → <DecapLogoIcon size="300px" type="decap-cms">                  ← 顶部默认箭头（去掉）
      *
-     * 这就是之前 `img[src*="logo"] { content: url(...) }` 失效的原因：
-     * 默认 logo 根本不是 <img> 标签，而是内联 SVG，CSS img 选择器无法命中。
+     * ★关键：设置了 logo_url 时，顶部已是 EasyDetek 的 <img>，但底部还会渲染一个
+     *        100px、灰色、position:absolute;bottom:10px 的 decap-cms 箭头信用图标
+     *        （NetlifyCreditIcon）——这就是页面上“残留的默认箭头 logo”。
      *
-     * 现在通过 config.yml 的 logo_url 字段（Decap 官方支持）让 CMS 原生渲染
-     * EasyDetek logo 的 <img>；下面的 CSS 负责把它限制到合适尺寸并居中。
+     * 定位依据：默认箭头 SVG 的 <path> 带 fill="#FF0082"（Decap 品牌粉，全源码仅
+     *   出现一次）。GitHub/登录按钮等功能图标用的是 azure/link 类型，path 不含
+     *   #FF0082，故不会被误伤；EasyDetek logo 是 <img>，同样不受影响。
+     *
+     * 注意：Decap 用 styled-components，DOM 里只有哈希 class（如 exus10f5），
+     *   不存在 nc-githubAuthenticationPage-* 这类语义 class（label 仅用于开发
+     *   调试，不进 DOM）。因此旧代码里 [class*="AuthenticationPage"] 实际命中
+     *   0 个节点——这也是箭头一直残留的根因。这里改用 :has() + path fill 精确匹配。
      */
 
     /* EasyDetek logo <img> 尺寸与居中（alt="Logo" 是 Decap 写死的，稳定可匹配） */
-    .nc-githubAuthenticationPage-logo,
     img[alt="Logo"] {
       max-height: 46px !important;
       height: 46px !important;
@@ -33,14 +46,19 @@
       margin: 0 auto !important;
     }
 
-    /* 若 logo 仍以默认内联 SVG 形式出现（未读到 config 时的兜底）：隐藏 SVG，
-       由下面的 JS 注入 EasyDetek logo <img> 替代。 */
-    .nc-githubAuthenticationPage-icon-fallback-hidden,
-    img[alt="Logo"].easydetek-injected {
-      /* 占位，保留选择器 */
+    /*
+     * 隐藏 Decap 默认箭头 logo：
+     *   - 顶部 300px 的 DecapLogoIcon（未读到 config 时出现）
+     *   - 底部 100px 的 NetlifyCreditIcon（设置了 logo_url 时出现 —— 当前场景）
+     * 两者都包含 fill="#FF0082" 的 <path>。:has() 在现代浏览器
+     * （Chrome105+/Safari15.4+/Firefox121+）生效，加载即隐藏，无闪烁。
+     * [fill="..." i] 的 i 标志做大小写不敏感匹配。
+     */
+    span:has(> svg path[fill="#ff0082" i]) {
+      display: none !important;
     }
 
-    /* 登录页标题字体 */
+    /* 登录页字体 */
     .nc-githubAuthenticationPage-text,
     .nc-githubAuthenticationPage-button,
     .nc-githubAuthenticationPage-link {
@@ -56,70 +74,54 @@
     if (window.CMS) {
       window.CMS.registerLocale('zh', {});
     }
-    // 替换页面标题
     document.title = 'EasyDetek 文档管理后台';
 
     /*
-     * 兜底：登录页 logo 替换。
-     * 正常情况下 config.yml 的 logo_url 已让 Decap 渲染 EasyDetek logo 的 <img>。
-     * 这里再监听 DOM，针对默认内联 SVG 箭头图标做替换，确保任何情况下都不显示
-     * Decap 默认 logo。
+     * JS 兜底：隐藏 Decap 默认箭头 logo。
+     * CSS :has() 已在主流浏览器即时生效；此处用 MutationObserver + path fill
+     * 精确识别，覆盖 :has() 不可用的旧浏览器，并确保 SPA 动态挂载的节点也被处理。
      *
-     * 判定“默认 SVG 图标”的依据：登录页包裹层内、尺寸很大（≥120px）的 <svg>。
-     * 登录页只有一个这样的 SVG（即默认 logo），不会误伤功能图标。
+     * 识别：svg 内含 fill="#FF0082" 的 path 即判定为 Decap 默认箭头
+     *   → 隐藏该 svg 及其外层 Icon <span>。
+     * 绝不触碰：EasyDetek 的 <img alt="Logo">（非 svg）、登录按钮功能图标
+     *   （azure/link 类型，path 无 #FF0082）。
      */
     (function () {
-      var LOGO_URL = '/img/logo-navbar.png';
-      var attr = 'data-easydetek-logo';
+      var DECAP_FILL = /^#ff0082$/i;
 
-      function injectLogo(target) {
-        if (target.querySelector('img[' + attr + ']')) return; // 已注入
-        var img = document.createElement('img');
-        img.src = LOGO_URL;
-        img.alt = 'Logo';
-        img.setAttribute(attr, '1');
-        img.style.cssText =
-          'max-height:46px;height:46px;width:auto;object-fit:contain;' +
-          'display:block;margin:0 auto;';
-        target.appendChild(img);
+      function isDecapArrow(svg) {
+        var paths = svg.querySelectorAll('path');
+        for (var i = 0; i < paths.length; i++) {
+          var f = paths[i].getAttribute('fill');
+          if (f && DECAP_FILL.test(f)) return true;
+        }
+        return false;
       }
 
-      function processAuthPage() {
-        // 登录页根节点：Decap 用 StyledAuthenticationPage（<section>），class 为哈希。
-        // 统一扫描登录区内的大尺寸 SVG 与已渲染的 logo <img>。
-        var authSections = document.querySelectorAll(
-          '[class*="StyledAuthenticationPage"], ' +
-          '[class*="AuthenticationPage"]'
-        );
-        if (!authSections.length) return;
-
-        authSections.forEach(function (section) {
-          // 1) 已经因为 logo_url 渲染出了 EasyDetek logo <img>：无需处理
-          if (section.querySelector('img[alt="Logo"]')) return;
-
-          // 2) 找到默认箭头 SVG（尺寸较大），替换为 logo
-          var svgs = section.querySelectorAll('svg');
-          svgs.forEach(function (svg) {
-            var rect = svg.getBoundingClientRect();
-            if (rect.width >= 120 || rect.height >= 120) {
-              svg.style.display = 'none';
-            }
-          });
-          injectLogo(section);
-        });
+      function hideDecapArrows() {
+        var svgs = document.querySelectorAll('svg');
+        for (var i = 0; i < svgs.length; i++) {
+          var svg = svgs[i];
+          if (!isDecapArrow(svg)) continue;
+          svg.style.display = 'none';
+          var parent = svg.parentElement;
+          if (parent && parent.tagName === 'SPAN') {
+            parent.style.display = 'none';
+          }
+        }
       }
 
-      // Decap CMS 是 SPA，登录页在脚本加载后才挂载；用 MutationObserver 持续兜底。
-      var observer = new MutationObserver(function () {
-        processAuthPage();
+      hideDecapArrows();
+      var observer = new MutationObserver(function (muts) {
+        for (var i = 0; i < muts.length; i++) {
+          if (muts[i].addedNodes && muts[i].addedNodes.length) {
+            hideDecapArrows();
+            return;
+          }
+        }
       });
-      observer.observe(document.documentElement, {
-        childList: true,
-        subtree: true,
-      });
-      // 首次执行 + 轮询保底（observer 偶尔在冷启动时错过早期节点）
-      processAuthPage();
-      setInterval(processAuthPage, 1000);
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+      setInterval(hideDecapArrows, 1500); // 冷启动轮询保底
     })();
   </script>
 </body>
