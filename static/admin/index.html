@@ -58,12 +58,16 @@
       display: none !important;
     }
 
-    /* 登录页字体 */
+    /* 登录页字体 + 白色文字（styled-components 用哈希 class，用 !important 强制覆盖） */
     .nc-githubAuthenticationPage-text,
     .nc-githubAuthenticationPage-button,
-    .nc-githubAuthenticationPage-link {
+    .nc-githubAuthenticationPage-link,
+    [class*="AuthenticationPage"] [class*="text"],
+    [class*="AuthenticationPage"] [class*="header"],
+    [class*="AuthenticationPage"] [class*="error"] {
       font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC',
         'Microsoft YaHei', 'Segoe UI', Roboto, sans-serif;
+      color: #ffffff !important;
     }
   </style>
 </head>
