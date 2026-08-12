@@ -47,13 +47,16 @@
   --ifm-footer-link-hover-color: var(--ifm-color-primary-lightest);
 }
 
-/* 首页 Hero 渐变背景 */
-.heroBanner {
-  background-image: var(--ed-hero-gradient);
-  color: #fff;
+/* 首页 Hero 文字白色
+   注意：index.tsx 用的是 CSS Module（styles.heroBanner），编译后 class 名带哈希
+   （如 heroBanner_xxx），所以 custom.css 里写 .heroBanner 匹配不到。
+   这里改用 Docusaurus 全局 class .hero__title / .hero__subtitle 直接覆盖。 */
+.hero__title {
+  color: #fff !important;
 }
-.heroBanner .hero__title { color: #fff; }
-.heroBanner .hero__subtitle { color: rgba(255, 255, 255, 0.88); }
+.hero__subtitle {
+  color: #fff !important;
+}
 
 /* 导航栏 logo：完整 logo（图形+文字），按宽度等比缩放 */
 .navbar__logo img {
