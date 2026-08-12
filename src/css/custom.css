@@ -63,15 +63,17 @@
   display: none; /* 隐藏导航栏文字，只保留 logo */
 }
 
-/* 页脚 logo 完整显示（带文字的完整 logo，不裁切） */
+/* 页脚 logo 完整显示（官网原版白色完整 logo，放大清晰显示） */
 :root {
-  --ifm-footer-logo-max-width: none; /* 取消默认宽度限制，让完整 logo 显示 */
+  --ifm-footer-logo-max-width: none; /* 取消默认宽度限制 */
 }
 .footer__logo {
   margin-top: 1rem;
+  margin-bottom: 0.5rem;
 }
 .footer__logo img {
   height: auto;
-  max-height: 56px;
-  width: auto;
+  max-height: 120px !important; /* 放大显示，确保完整清晰 */
+  width: auto !important;
+  object-fit: contain;
 }
