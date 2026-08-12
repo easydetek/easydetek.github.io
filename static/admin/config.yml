@@ -13,8 +13,9 @@ backend:
 media_folder: "static/img/products"
 public_folder: "/img/products"
 
-# 本地开发模式（本地预览时不调用 GitHub API，直接读写本地文件）
-local_backend: true
+# 本地开发模式（需配合 decap-cms-proxy-server，默认关闭）
+# 本地开发时改为 true 并运行 npx decap-cms-proxy-server
+local_backend: false
 
 # 站点 URL（用于生成链接）
 site_url: https://docs.easydetek.com
