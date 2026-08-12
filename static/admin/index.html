@@ -69,6 +69,15 @@
         'Microsoft YaHei', 'Segoe UI', Roboto, sans-serif;
       color: #ffffff !important;
     }
+
+    /* 兜底：登录页区域所有文本强制白色（覆盖 styled-components inline style） */
+    [class*="AuthenticationPage"] * {
+      color: #ffffff !important;
+    }
+    [class*="AuthenticationPage"] a,
+    [class*="AuthenticationPage"] button {
+      color: #ffffff !important;
+    }
   </style>
 </head>
 <body>
