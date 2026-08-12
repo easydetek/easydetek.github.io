@@ -19,3 +19,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 gitee_sync_key*
+
+# ZCode 本地工具文件（计划/会话缓存，不入库）
+.zcode/
