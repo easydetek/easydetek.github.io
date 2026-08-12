@@ -7,18 +7,45 @@
   <title>EasyDetek 文档管理后台</title>
   <link rel="icon" href="/img/favicon.png" />
   <style>
-    /* 替换 Decap CMS 默认 logo 为 EasyDetek logo */
+    /*
+     * EasyDetek 登录页 Logo 处理说明：
+     *
+     * Decap CMS 3.6.0 的登录页 logo 渲染逻辑（见 cD 函数）：
+     *   - 若 config.yml 设置了 logo_url：渲染 <img alt="Logo" src=logo_url>
+     *     （包在 styled-component 包裹层里，class 为哈希值）
+     *   - 若未设置 logo_url：渲染内联 SVG（Icon 组件，type="decap-cms"，300px 箭头图标）
+     *
+     * 这就是之前 `img[src*="logo"] { content: url(...) }` 失效的原因：
+     * 默认 logo 根本不是 <img> 标签，而是内联 SVG，CSS img 选择器无法命中。
+     *
+     * 现在通过 config.yml 的 logo_url 字段（Decap 官方支持）让 CMS 原生渲染
+     * EasyDetek logo 的 <img>；下面的 CSS 负责把它限制到合适尺寸并居中。
+     */
+
+    /* EasyDetek logo <img> 尺寸与居中（alt="Logo" 是 Decap 写死的，稳定可匹配） */
     .nc-githubAuthenticationPage-logo,
-    img[src*="decap"],
-    img[src*="netlifycms"],
-    img[src*="logo"] {
-      content: url('/img/logo-navbar.png') !important;
-      max-height: 50px !important;
+    img[alt="Logo"] {
+      max-height: 46px !important;
+      height: 46px !important;
       width: auto !important;
+      object-fit: contain !important;
+      display: block !important;
+      margin: 0 auto !important;
     }
-    /* 登录页标题 */
-    .nc-githubAuthenticationPage-text {
-      font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+
+    /* 若 logo 仍以默认内联 SVG 形式出现（未读到 config 时的兜底）：隐藏 SVG，
+       由下面的 JS 注入 EasyDetek logo <img> 替代。 */
+    .nc-githubAuthenticationPage-icon-fallback-hidden,
+    img[alt="Logo"].easydetek-injected {
+      /* 占位，保留选择器 */
+    }
+
+    /* 登录页标题字体 */
+    .nc-githubAuthenticationPage-text,
+    .nc-githubAuthenticationPage-button,
+    .nc-githubAuthenticationPage-link {
+      font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC',
+        'Microsoft YaHei', 'Segoe UI', Roboto, sans-serif;
     }
   </style>
 </head>
@@ -31,6 +58,69 @@
     }
     // 替换页面标题
     document.title = 'EasyDetek 文档管理后台';
+
+    /*
+     * 兜底：登录页 logo 替换。
+     * 正常情况下 config.yml 的 logo_url 已让 Decap 渲染 EasyDetek logo 的 <img>。
+     * 这里再监听 DOM，针对默认内联 SVG 箭头图标做替换，确保任何情况下都不显示
+     * Decap 默认 logo。
+     *
+     * 判定“默认 SVG 图标”的依据：登录页包裹层内、尺寸很大（≥120px）的 <svg>。
+     * 登录页只有一个这样的 SVG（即默认 logo），不会误伤功能图标。
+     */
+    (function () {
+      var LOGO_URL = '/img/logo-navbar.png';
+      var attr = 'data-easydetek-logo';
+
+      function injectLogo(target) {
+        if (target.querySelector('img[' + attr + ']')) return; // 已注入
+        var img = document.createElement('img');
+        img.src = LOGO_URL;
+        img.alt = 'Logo';
+        img.setAttribute(attr, '1');
+        img.style.cssText =
+          'max-height:46px;height:46px;width:auto;object-fit:contain;' +
+          'display:block;margin:0 auto;';
+        target.appendChild(img);
+      }
+
+      function processAuthPage() {
+        // 登录页根节点：Decap 用 StyledAuthenticationPage（<section>），class 为哈希。
+        // 统一扫描登录区内的大尺寸 SVG 与已渲染的 logo <img>。
+        var authSections = document.querySelectorAll(
+          '[class*="StyledAuthenticationPage"], ' +
+          '[class*="AuthenticationPage"]'
+        );
+        if (!authSections.length) return;
+
+        authSections.forEach(function (section) {
+          // 1) 已经因为 logo_url 渲染出了 EasyDetek logo <img>：无需处理
+          if (section.querySelector('img[alt="Logo"]')) return;
+
+          // 2) 找到默认箭头 SVG（尺寸较大），替换为 logo
+          var svgs = section.querySelectorAll('svg');
+          svgs.forEach(function (svg) {
+            var rect = svg.getBoundingClientRect();
+            if (rect.width >= 120 || rect.height >= 120) {
+              svg.style.display = 'none';
+            }
+          });
+          injectLogo(section);
+        });
+      }
+
+      // Decap CMS 是 SPA，登录页在脚本加载后才挂载；用 MutationObserver 持续兜底。
+      var observer = new MutationObserver(function () {
+        processAuthPage();
+      });
+      observer.observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+      });
+      // 首次执行 + 轮询保底（observer 偶尔在冷启动时错过早期节点）
+      processAuthPage();
+      setInterval(processAuthPage, 1000);
+    })();
   </script>
 </body>
 </html>

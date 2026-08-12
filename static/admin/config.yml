@@ -20,6 +20,10 @@ local_backend: false
 # 站点 URL（用于生成链接）
 site_url: https://docs.easydetek.com
 
+# 登录页 Logo（Decap CMS 官方支持字段：设置后会渲染 <img alt="Logo" src=...>）
+# 不设置时，Decap 渲染默认箭头图标（内联 SVG），无法用 CSS img 选择器覆盖。
+logo_url: /img/logo-navbar.png
+
 # ===== 内容集合（各产品线）=====
 
 collections:
