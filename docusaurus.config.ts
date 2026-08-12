@@ -277,6 +277,7 @@ const config: Config = {
           items: [
             {label: '商务合作', href: 'mailto:business@easydetek.com'},
             {label: '技术支持', href: 'mailto:support@easydetek.com'},
+            {label: '📝 管理后台', href: 'https://docs.easydetek.com/admin/'},
           ],
         },
       ],
