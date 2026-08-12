@@ -245,7 +245,8 @@ const config: Config = {
       logo: {
         alt: 'EasyDetek Logo',
         src: 'img/logo-white.png',
-        height: 100,
+        width: 400,
+        height: 82,
       },
       links: [
         {
