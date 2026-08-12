@@ -4,24 +4,24 @@ sidebar_position: 1
 
 # EDQ25L-Y-01
 
-> 多级智能调参，支持雷达阈值学习，支持蓝牙连接/微信小程序/APP控制｜24GHz 独立传感器｜✅ 正式量产
+> ｜模组｜✅ 正式量产
 
 ## 核心特点
 
-多级智能调参，支持雷达阈值学习，支持蓝牙连接/微信小程序/APP控制
+详见规格书
 
 ## 规格参数
 
 | 参数 | 规格 |
 |------|------|
-| 工作频段 | 24GHz |
-| 感应方式 | 可见光+毫米波 |
-| 输入电压 | AC 90V~260V |
-| 输出方式 | AC火线out 1路 |
-| 调参方式 | 红外遥控器 |
-| 安装方式 | 顶装明装款 |
 | 产品状态 | 正式量产 |
 
+## 应用信息
+
+| 项目 | 说明 |
+|------|------|
+| 应用场景 | 公寓楼,停车场,教育,照明系列,长走廊 |
+
 :::info 规格书
-完整规格书请从[产品知识库](https://alidocs.dingtalk.com/i/nodes/14lgGw3P8vvQRw5dUg2exAlg85daZ90D)获取，或联系 support@easydetek.com。
+完整规格书请从[产品知识库](https://alidocs.dingtalk.com/i/nodes/jb9Y4gmKWr7QPe5kijjeBnmQVGXn6lpz)获取，或联系 support@easydetek.com。
 :::
