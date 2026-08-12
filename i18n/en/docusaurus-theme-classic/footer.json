@@ -50,5 +50,29 @@
   "logo.alt": {
     "message": "EasyDetek Logo",
     "description": "The alt text of footer logo"
+  },
+  "link.title.产品线": {
+    "message": "产品线",
+    "description": "The title of the footer links column with title=产品线 in the footer"
+  },
+  "link.title.通用": {
+    "message": "通用",
+    "description": "The title of the footer links column with title=通用 in the footer"
+  },
+  "link.item.label.模组": {
+    "message": "模组",
+    "description": "The label of footer link with label=模组 linking to /modules/intro"
+  },
+  "link.item.label.传感器": {
+    "message": "传感器",
+    "description": "The label of footer link with label=传感器 linking to /sensors/intro"
+  },
+  "link.item.label.配件": {
+    "message": "配件",
+    "description": "The label of footer link with label=配件 linking to /accessories/intro"
+  },
+  "link.item.label.开源生态": {
+    "message": "开源生态",
+    "description": "The label of footer link with label=开源生态 linking to /opensource/intro"
   }
 }

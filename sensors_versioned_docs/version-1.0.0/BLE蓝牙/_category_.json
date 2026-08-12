@@ -1,0 +1,10 @@
+{
+  "label": "BLE 蓝牙",
+  "position": 4,
+  "collapsed": true,
+  "collapsible": true,
+  "link": {
+    "type": "generated-index",
+    "description": "蓝牙传感器（3 款），支持微信小程序配置。"
+  }
+}

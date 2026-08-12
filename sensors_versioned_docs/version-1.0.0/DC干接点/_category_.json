@@ -1,0 +1,10 @@
+{
+  "label": "DC 干接点",
+  "position": 5,
+  "collapsed": true,
+  "collapsible": true,
+  "link": {
+    "type": "generated-index",
+    "description": "DC 供电、干接点输出的传感器（2 款）。"
+  }
+}

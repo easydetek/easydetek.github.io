@@ -1,0 +1,10 @@
+{
+  "label": "AC 强电输出",
+  "position": 1,
+  "collapsed": true,
+  "collapsible": true,
+  "link": {
+    "type": "generated-index",
+    "description": "直接控制灯具火线的独立传感器（7 款），工程批量首选。"
+  }
+}

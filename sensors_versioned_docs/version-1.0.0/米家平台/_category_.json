@@ -1,0 +1,10 @@
+{
+  "label": "米家平台",
+  "position": 3,
+  "collapsed": true,
+  "collapsible": true,
+  "link": {
+    "type": "generated-index",
+    "description": "接入小米米家 APP 的传感器（2 款）。"
+  }
+}

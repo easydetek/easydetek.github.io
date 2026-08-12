@@ -1,0 +1,10 @@
+{
+  "label": "Tuya Zigbee",
+  "position": 2,
+  "collapsed": true,
+  "collapsible": true,
+  "link": {
+    "type": "generated-index",
+    "description": "涂鸦 Zigbee 无线通讯协议传感器（4 款），智能家居生态集成。"
+  }
+}

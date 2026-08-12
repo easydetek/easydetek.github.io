@@ -22,5 +22,25 @@
   "item.label.GitHub": {
     "message": "GitHub",
     "description": "Navbar item with label GitHub"
+  },
+  "item.label.模组": {
+    "message": "模组",
+    "description": "Navbar item with label 模组"
+  },
+  "item.label.传感器": {
+    "message": "传感器",
+    "description": "Navbar item with label 传感器"
+  },
+  "item.label.配件": {
+    "message": "配件",
+    "description": "Navbar item with label 配件"
+  },
+  "item.label.开发者": {
+    "message": "开发者",
+    "description": "Navbar item with label 开发者"
+  },
+  "item.label.案例": {
+    "message": "案例",
+    "description": "Navbar item with label 案例"
   }
 }

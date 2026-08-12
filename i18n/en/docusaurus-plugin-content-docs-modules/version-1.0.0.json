@@ -1,0 +1,38 @@
+{
+  "version.label": {
+    "message": "1.0.0",
+    "description": "The label for version 1.0.0"
+  },
+  "sidebar.modulesSidebar.category.5.8GHz 模组": {
+    "message": "5.8GHz 模组",
+    "description": "The label for category '5.8GHz 模组' in sidebar 'modulesSidebar'"
+  },
+  "sidebar.modulesSidebar.category.5.8GHz 模组.link.generated-index.description": {
+    "message": "5.8GHz 微波感应模组（14 款）：吸顶灯、筒灯、灯丝灯、高空灯等场景。",
+    "description": "The generated-index page description for category '5.8GHz 模组' in sidebar 'modulesSidebar'"
+  },
+  "sidebar.modulesSidebar.category.10.5GHz 模组": {
+    "message": "10.5GHz 模组",
+    "description": "The label for category '10.5GHz 模组' in sidebar 'modulesSidebar'"
+  },
+  "sidebar.modulesSidebar.category.10.5GHz 模组.link.generated-index.description": {
+    "message": "10.5GHz 模组（1 款）：智能门锁、猫眼。",
+    "description": "The generated-index page description for category '10.5GHz 模组' in sidebar 'modulesSidebar'"
+  },
+  "sidebar.modulesSidebar.category.24GHz 模组": {
+    "message": "24GHz 模组",
+    "description": "The label for category '24GHz 模组' in sidebar 'modulesSidebar'"
+  },
+  "sidebar.modulesSidebar.category.24GHz 模组.link.generated-index.description": {
+    "message": "24GHz 毫米波模组（13 款）：台灯、面板灯、镜子灯、智能马桶等场景。",
+    "description": "The generated-index page description for category '24GHz 模组' in sidebar 'modulesSidebar'"
+  },
+  "sidebar.modulesSidebar.category.60GHz 模组": {
+    "message": "60GHz 模组",
+    "description": "The label for category '60GHz 模组' in sidebar 'modulesSidebar'"
+  },
+  "sidebar.modulesSidebar.category.60GHz 模组.link.generated-index.description": {
+    "message": "60GHz 毫米波模组（2 款）：体征监测、占位探测。",
+    "description": "The generated-index page description for category '60GHz 模组' in sidebar 'modulesSidebar'"
+  }
+}

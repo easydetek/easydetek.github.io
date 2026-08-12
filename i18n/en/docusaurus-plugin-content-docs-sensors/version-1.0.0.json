@@ -1,0 +1,54 @@
+{
+  "version.label": {
+    "message": "1.0.0",
+    "description": "The label for version 1.0.0"
+  },
+  "sidebar.sensorsSidebar.category.AC 强电输出": {
+    "message": "AC 强电输出",
+    "description": "The label for category 'AC 强电输出' in sidebar 'sensorsSidebar'"
+  },
+  "sidebar.sensorsSidebar.category.AC 强电输出.link.generated-index.description": {
+    "message": "直接控制灯具火线的独立传感器（7 款），工程批量首选。",
+    "description": "The generated-index page description for category 'AC 强电输出' in sidebar 'sensorsSidebar'"
+  },
+  "sidebar.sensorsSidebar.category.Tuya Zigbee": {
+    "message": "Tuya Zigbee",
+    "description": "The label for category 'Tuya Zigbee' in sidebar 'sensorsSidebar'"
+  },
+  "sidebar.sensorsSidebar.category.Tuya Zigbee.link.generated-index.description": {
+    "message": "涂鸦 Zigbee 无线通讯协议传感器（4 款），智能家居生态集成。",
+    "description": "The generated-index page description for category 'Tuya Zigbee' in sidebar 'sensorsSidebar'"
+  },
+  "sidebar.sensorsSidebar.category.米家平台": {
+    "message": "米家平台",
+    "description": "The label for category '米家平台' in sidebar 'sensorsSidebar'"
+  },
+  "sidebar.sensorsSidebar.category.米家平台.link.generated-index.description": {
+    "message": "接入小米米家 APP 的传感器（2 款）。",
+    "description": "The generated-index page description for category '米家平台' in sidebar 'sensorsSidebar'"
+  },
+  "sidebar.sensorsSidebar.category.BLE 蓝牙": {
+    "message": "BLE 蓝牙",
+    "description": "The label for category 'BLE 蓝牙' in sidebar 'sensorsSidebar'"
+  },
+  "sidebar.sensorsSidebar.category.BLE 蓝牙.link.generated-index.description": {
+    "message": "蓝牙传感器（3 款），支持微信小程序配置。",
+    "description": "The generated-index page description for category 'BLE 蓝牙' in sidebar 'sensorsSidebar'"
+  },
+  "sidebar.sensorsSidebar.category.DC 干接点": {
+    "message": "DC 干接点",
+    "description": "The label for category 'DC 干接点' in sidebar 'sensorsSidebar'"
+  },
+  "sidebar.sensorsSidebar.category.DC 干接点.link.generated-index.description": {
+    "message": "DC 供电、干接点输出的传感器（2 款）。",
+    "description": "The generated-index page description for category 'DC 干接点' in sidebar 'sensorsSidebar'"
+  },
+  "sidebar.sensorsSidebar.category.60GHz 康养监护": {
+    "message": "60GHz 康养监护",
+    "description": "The label for category '60GHz 康养监护' in sidebar 'sensorsSidebar'"
+  },
+  "sidebar.sensorsSidebar.category.60GHz 康养监护.link.generated-index.description": {
+    "message": "60GHz 毫米波康养监护传感器（2 款）：呼吸监测、跌倒检测、人数统计。",
+    "description": "The generated-index page description for category '60GHz 康养监护' in sidebar 'sensorsSidebar'"
+  }
+}

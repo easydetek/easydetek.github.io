@@ -119,11 +119,7 @@ const config: Config = {
         sidebarPath: './sidebars.sensors.ts',
         editUrl: `${REPO_URL}/tree/main/sensors_docs/`,
         showLastUpdateTime: process.env.DISABLE_LAST_UPDATE !== '1',
-        lastVersion: '1.0.0',
-        versions: {
-          current: {label: 'Next（开发版）', path: 'next', banner: 'unreleased'},
-          '1.0.0': {label: '1.0.0', banner: 'none'},
-        },
+
       },
     ],
     // 配件产品线
@@ -184,7 +180,7 @@ const config: Config = {
         src: 'img/logo-icon.png',
       },
       items: [
-        // 各产品线入口（每个独立 docs 实例）
+        // 各产品线入口（每个独立 docs 实例）—— 左侧仅保留产品线
         {
           type: 'docSidebar',
           sidebarId: 'modulesSidebar',
@@ -211,11 +207,9 @@ const config: Config = {
           sidebarId: 'opensourceSidebar',
           docsPluginId: 'opensource',
           position: 'left',
-          label: '开源生态',
+          label: '开发者',
         },
-        {to: '/blog', label: '应用案例', position: 'left'},
-        {to: '/open-source', label: '开源项目', position: 'left'},
-        // 各产品线独立版本下拉（右侧）
+        // 各产品线独立版本下拉（右侧）—— 上下文感知，只显示当前产品线
         {
           type: 'custom-contextAwareDocsVersionDropdown',
           docsPluginId: 'modules',
@@ -240,6 +234,9 @@ const config: Config = {
           position: 'right',
           dropdownActiveClassDisabled: true,
         },
+        // 案例与项目展示页移到右侧，避免左侧过满
+        {to: '/blog', label: '案例', position: 'right'},
+        {to: '/open-source', label: '开源项目', position: 'right'},
         {
           type: 'localeDropdown',
           position: 'right',
