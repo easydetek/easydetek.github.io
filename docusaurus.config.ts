@@ -169,7 +169,9 @@ const config: Config = {
     navbar: {
       logo: {
         alt: 'EasyDetek Logo',
-        src: 'img/logo-icon.png',
+        src: 'img/logo-navbar.png',
+        width: 160,
+        height: 33,
       },
       items: [
         // 各产品线入口（每个独立 docs 实例）—— 左侧仅保留产品线

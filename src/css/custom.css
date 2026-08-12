@@ -55,9 +55,11 @@
 .heroBanner .hero__title { color: #fff; }
 .heroBanner .hero__subtitle { color: rgba(255, 255, 255, 0.88); }
 
-/* 导航栏 logo 略微放大（纯图标，无文字需更显眼） */
+/* 导航栏 logo：完整 logo（图形+文字），按宽度等比缩放 */
 .navbar__logo img {
-  height: 40px;
+  width: auto;
+  height: auto;
+  max-height: 40px;
 }
 .navbar__title {
   display: none; /* 隐藏导航栏文字，只保留 logo */
