@@ -62,3 +62,16 @@
 .navbar__title {
   display: none; /* 隐藏导航栏文字，只保留 logo */
 }
+
+/* 页脚 logo 完整显示（带文字的完整 logo，不裁切） */
+:root {
+  --ifm-footer-logo-max-width: none; /* 取消默认宽度限制，让完整 logo 显示 */
+}
+.footer__logo {
+  margin-top: 1rem;
+}
+.footer__logo img {
+  height: auto;
+  max-height: 56px;
+  width: auto;
+}
