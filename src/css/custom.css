@@ -64,16 +64,11 @@
 }
 
 /* 页脚 logo 完整显示（官网原版白色完整 logo，放大清晰显示） */
-:root {
-  --ifm-footer-logo-max-width: none; /* 取消默认宽度限制 */
-}
+/* 根因：Infima 默认 --ifm-footer-logo-max-width: min(30rem,90vw) = 480px，
+   196x40 logo 放大后宽 490px 超限被截断。直接在 .footer__logo 强制覆盖。 */
 .footer__logo {
-  margin-top: 1rem;
-  margin-bottom: 0.5rem;
+  max-width: none !important;
 }
-.footer__logo img {
-  height: auto;
-  max-height: 120px !important; /* 放大显示，确保完整清晰 */
-  width: auto !important;
-  object-fit: contain;
+.footer__bottom {
+  text-align: center;
 }
