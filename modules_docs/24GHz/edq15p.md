@@ -27,6 +27,6 @@ sidebar_position: 1
 | 细分市场 | 生态品牌及企业 |
 | 应用场景 | 面板灯、吸顶灯、吊线灯、教育照明 |
 
-:::info 规格书
-完整规格书请从[产品知识库](https://alidocs.dingtalk.com/i/nodes/jb9Y4gmKWr7QPe5kijjeBnmQVGXn6lpz)获取，或联系 support@easydetek.com。
-:::
+## 规格书下载
+
+📄 [EDQ15P 规格书 PDF](/pdf/edq15p.pdf)

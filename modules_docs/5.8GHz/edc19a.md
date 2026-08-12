@@ -28,6 +28,6 @@ sidebar_position: 1
 | 安装方式 | 挂高≤12m |
 | 应用场景 | 仓库、厂房、体育馆、高空灯、高棚灯 |
 
-:::info 规格书
-完整规格书请从[产品知识库](https://alidocs.dingtalk.com/i/nodes/jb9Y4gmKWr7QPe5kijjeBnmQVGXn6lpz)获取，或联系 support@easydetek.com。
-:::
+## 规格书下载
+
+📄 [EDC19A 规格书 PDF](/pdf/edc19a.pdf)

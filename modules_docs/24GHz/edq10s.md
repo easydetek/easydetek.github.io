@@ -27,6 +27,6 @@ sidebar_position: 1
 | 细分市场 | 小夜灯,智能门锁和门铃,IPC（太阳能电池摄像头类）窗户摄像头 |
 | 应用场景 | 走廊、玄关、智能门锁、智能面板 |
 
-:::info 规格书
-完整规格书请从[产品知识库](https://alidocs.dingtalk.com/i/nodes/jb9Y4gmKWr7QPe5kijjeBnmQVGXn6lpz)获取，或联系 support@easydetek.com。
-:::
+## 规格书下载
+
+📄 [EDQ10S 规格书 PDF](/pdf/edq10s.pdf)
