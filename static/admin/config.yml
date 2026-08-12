@@ -9,13 +9,6 @@ backend:
   # base_url: https://your-oauth-proxy.example.com
   # auth_endpoint: /auth
 
-# 备选后端：Gitee（国内访问更快，文档人员可选）
-# 如需启用 Gitee，将上面 backend 替换为：
-# backend:
-#   name: git-gateway
-#   git_gateway:
-#     enabled: true
-
 # 媒体资源（产品图片上传目录）
 media_folder: "static/img/products"
 public_folder: "/img/products"
@@ -37,11 +30,6 @@ collections:
     create: true
     delete: true
     summary: "{{title}} - {{band}} ({{feature}})"
-    nested:
-      depth: 2
-    meta:
-      path: "{{slug}}"
-      summary: "{{title}} ({{band}})"
     fields:
       - { label: "产品型号", name: "title", widget: "string", hint: "如 EDC116" }
       - { label: "侧边栏排序", name: "sidebar_position", widget: "number", default: 1, required: false }
@@ -69,11 +57,6 @@ collections:
     create: true
     delete: true
     summary: "{{title}} - {{band}} ({{feature}})"
-    nested:
-      depth: 2
-    meta:
-      path: "{{slug}}"
-      summary: "{{title}} ({{band}})"
     fields:
       - { label: "产品型号", name: "title", widget: "string", hint: "如 EDQ286B" }
       - { label: "侧边栏排序", name: "sidebar_position", widget: "number", default: 1, required: false }
@@ -109,8 +92,6 @@ collections:
     create: true
     delete: true
     summary: "{{title}} - {{feature}}"
-    nested:
-      depth: 2
     fields:
       - { label: "产品型号", name: "title", widget: "string", hint: "如 EDC591" }
       - { label: "侧边栏排序", name: "sidebar_position", widget: "number", default: 1, required: false }
@@ -141,8 +122,6 @@ collections:
     folder: "docs"
     create: true
     delete: true
-    nested:
-      depth: 2
     fields:
       - { label: "标题", name: "title", widget: "string" }
       - { label: "侧边栏排序", name: "sidebar_position", widget: "number", default: 1, required: false }
