@@ -63,11 +63,6 @@ const config: Config = {
           sidebarPath: './sidebars.ts',
           editUrl: `${REPO_URL}/tree/main/docs/`,
           showLastUpdateTime: process.env.DISABLE_LAST_UPDATE !== '1',
-          lastVersion: '1.0.0',
-          versions: {
-            current: {label: 'Next（开发版）', path: 'next', banner: 'unreleased'},
-            '1.0.0': {label: '1.0.0', banner: 'none'},
-          },
         },
         blog: {
           showReadingTime: true,

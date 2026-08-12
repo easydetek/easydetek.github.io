@@ -1,0 +1,8 @@
+{
+  "label": "常见问题 FAQ",
+  "position": 5,
+  "link": {
+    "type": "doc",
+    "id": "faq/intro"
+  }
+}

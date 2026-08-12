@@ -31,3 +31,9 @@ sidebar_position: 1
 ## 规格书下载
 
 📄 [EDC19A 规格书 PDF](/pdf/edc19a.pdf)
+## 相关 FAQ
+
+- [如何选择频段](/docs/faq/模组选型/frequency-selection)
+- [微波 vs 红外区别](/docs/faq/通用问题/microwave-vs-pir)
+- [安装注意事项](/docs/faq/通用问题/installation)
+- [供电与接线](/docs/faq/通用问题/power-wiring)
