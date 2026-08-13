@@ -1,11 +1,12 @@
 # ============================================================
-# EasyDetek 站点 —— docker compose（含 Caddy 自动 HTTPS）
-# 架构：用户 → Caddy(80/443, 自动HTTPS) → nginx(easydetek-site:80)
+# EasyDetek 站点 —— docker compose（生产部署）
+# 架构：现有 Nginx(宿主机) → 站点容器(nginx:80) + OAuth 代理
+# HTTPS 由宿主机现有 Nginx 处理
 # ============================================================
 # 常用命令：
 #   启动：  docker compose up -d --build
 #   停止：  docker compose down
-#   日志：  docker compose logs -f caddy
+#   日志：  docker compose logs -f
 # ============================================================
 
 services:
@@ -13,39 +14,19 @@ services:
   easydetek-site:
     build:
       context: .
-      # 部署到服务器时改成你的正式域名：
-      #   args:
-      #     SITE_URL: https://docs.easydetek.com
       args:
         SITE_URL: https://docs.easydetek.com
     image: easydetek-site:latest
     container_name: easydetek-site
     restart: unless-stopped
-    # 不再对外暴露端口，仅在内部网络供 caddy 反代
-    expose:
-      - "80"
+    ports:
+      - "127.0.0.1:8080:80"   # 只监听本地 8080，由宿主机 Nginx 反代
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost/"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 10s
-
-  # ---- Caddy：反向代理 + 自动 HTTPS ----
-  caddy:
-    image: caddy:2-alpine
-    container_name: easydetek-caddy
-    restart: unless-stopped
-    ports:
-      - "80:80"    # HTTP（用于证书校验 + 自动跳转 HTTPS）
-      - "443:443"  # HTTPS
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro    # 配置
-      - caddy_data:/data                        # 证书存储（务必持久化，否则每次重启重新申请）
-      - caddy_config:/config                    # Caddy 运行配置
-    depends_on:
-      easydetek-site:
-        condition: service_healthy
 
   # ---- OAuth 代理：为 CMS 后台提供登录认证 ----
   oauth-proxy:
@@ -56,9 +37,5 @@ services:
     environment:
       - ORIGIN=https://docs.easydetek.com
       - PORT=8081
-    expose:
-      - "8081"
-
-volumes:
-  caddy_data:
-  caddy_config:
+    ports:
+      - "127.0.0.1:8081:8081"  # 只监听本地 8081，由宿主机 Nginx 反代
