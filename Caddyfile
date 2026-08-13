@@ -8,6 +8,14 @@ docs.easydetek.com {
 	# 反向代理到内部 nginx 容器（站点服务）
 	reverse_proxy easydetek-site:80
 
+	# OAuth 代理路由（CMS 登录用）
+	handle /auth* {
+		reverse_proxy oauth-proxy:8081
+	}
+	handle /callback* {
+		reverse_proxy oauth-proxy:8081
+	}
+
 	# 压缩（Caddy 默认已对 text 类启用 gzip，这里显式开启 zstd 提升效果）
 	encode zstd gzip
 

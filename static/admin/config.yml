@@ -1,13 +1,25 @@
 # Decap CMS 配置 —— EasyDetek 文档管理后台
 # 文档：https://decapcms.org/docs/configuration/
 
+# GitHub 后端（通过 OAuth 代理认证）
+# 文档人员用 GitHub 账号登录，国内也可用 Gitee（见底部注释）
 backend:
   name: github
   repo: easydetek/easydetek.github.io
   branch: main
-  # 以下为 GitHub OAuth 配置（部署 OAuth 代理后填入）
-  # base_url: https://your-oauth-proxy.example.com
-  # auth_endpoint: /auth
+  base_url: https://docs.easydetek.com
+  auth_endpoint: /auth
+  app_id: Ov23liggofFVPfvYHeRt
+
+# 切换到 Gitee 后端（国内访问更快）：
+# 把上面 backend 整块替换为：
+# backend:
+#   name: github           # Decap 用 github driver，但 repo 指向 Gitee
+#   repo: easydetek/easydetek.gitee.io
+#   branch: main
+#   base_url: https://docs.easydetek.com
+#   auth_endpoint: /auth?provider=gitee
+#   app_id: d58ff3e8306802db1b29f98b3e5bed4b2a022b0510a046a4eb95b5bf6c50a476
 
 # 媒体资源（产品图片上传目录）
 media_folder: "static/img/products"
