@@ -19,7 +19,7 @@ warn()  { echo -e "${YELLOW}[WARN]${NC}  $1"; }
 fail()  { echo -e "${RED}[FAIL]${NC}  $1"; exit 1; }
 
 # ---------- 配置 ----------
-DEPLOY_DIR="${1:-/home/easydetek/site}"
+DEPLOY_DIR="${1:-/home/easydetek/docs.easydetek.com}"
 REPO_URL="https://github.com/easydetek/easydetek.github.io.git"
 GITEE_URL="https://gitee.com/easydetek/easydetek.gitee.io.git"
 DOMAIN="docs.easydetek.com"
