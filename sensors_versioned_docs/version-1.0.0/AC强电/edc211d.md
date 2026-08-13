@@ -22,6 +22,12 @@ sidebar_position: 1
 | 安装方式 | M20螺纹 |
 | 产品状态 | 正式量产 |
 
+## 相关 FAQ
+
+- [如何选择频段](/docs/faq/模组选型/frequency-selection)
+- [安装注意事项](/docs/faq/通用问题/installation)
+- [供电与接线](/docs/faq/通用问题/power-wiring)
+
 :::info 规格书
-完整规格书请从[产品知识库](https://alidocs.dingtalk.com/i/nodes/14lgGw3P8vvQRw5dUg2exAlg85daZ90D)获取，或联系 support@easydetek.com。
+完整规格书请从[产品知识库](https://alidocs.dingtalk.com/i/nodes/jb9Y4gmKWr7QPe5kijjeBnmQVGXn6lpz)获取，或联系 support@easydetek.com。
 :::
