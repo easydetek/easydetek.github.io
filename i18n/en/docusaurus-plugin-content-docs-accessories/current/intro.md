@@ -11,7 +11,7 @@ EasyDetek accessories provide high-sensitivity light-controlled sensing solution
 
 | Model | Feature | Range | Input | Mounting Height |
 |-------|---------|-------|-------|-----------------|
-| EDC591 | Light-controlled auto switch | 7-10m radius | 12±1V DC | 10-15m |
+| EDC59A | Light-controlled auto switch | 7-10m radius | 12±1V DC | 10-15m |
 | EDC593 | Ultra-high sensitivity | 4-8m radius | 8-12V | 13m |
 | EDC59Z | Ultra-high sensitivity, 0-10V dimming | >4m | 8-12V | 12m |
 | EDC59I | Ultra-high sensitivity, CW modulation | >4m | 8-12V | 12m |

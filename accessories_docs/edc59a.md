@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-# EDC591
+# EDC59A
 
 > 光控传感器自动开关控制｜配件
 

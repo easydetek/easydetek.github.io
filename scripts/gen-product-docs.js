@@ -39,7 +39,7 @@ const moduleData = [
 ];
 
 const accessoryData = [
-  {model:'EDC591',feature:'光控传感器自动开关控制',func:'移动感应半径7-10m',output:'IO/PWM',vin:'12±1V DC',vout:'3.3V PWM',size:'-',market:'灯具市场、高空市场',mount:'挂高10-15m',scene:'仓库、厂房、体育馆、高空灯、高棚灯'},
+  {model:'EDC59A',feature:'光控传感器自动开关控制',func:'移动感应半径7-10m',output:'IO/PWM',vin:'12±1V DC',vout:'3.3V PWM',size:'-',market:'灯具市场、高空市场',mount:'挂高10-15m',scene:'仓库、厂房、体育馆、高空灯、高棚灯'},
   {model:'EDC593',feature:'超高灵敏度设计',func:'移动感应半径4-8m',output:'IO(兼容PWM)',vin:'8-12V',vout:'8-12V',size:'-',market:'灯具市场、高空市场',mount:'挂高13m',scene:'仓库、厂房、体育馆、高空灯、高棚灯'},
   {model:'EDC59Z',feature:'超高灵敏度设计',func:'>4m',output:'IO/PWM',vin:'8-12V',vout:'0-12V PWM / 0-10V DC',size:'-',market:'灯具市场、高空市场',mount:'挂高12m',scene:'仓库、厂房、体育馆、高空灯、高棚灯'},
   {model:'EDC59I',feature:'超高灵敏度设计',func:'>4m',output:'IO/PWM',vin:'8-12V',vout:'调制方式：CW',size:'-',market:'高空市场',mount:'挂高12m',scene:'仓库、厂房、体育馆、高空灯、高棚灯'},
