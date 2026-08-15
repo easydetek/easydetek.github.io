@@ -84,7 +84,7 @@ const FeatureList: FeatureItem[] = [
 
 function Feature({icon: Icon, title, description}: FeatureItem) {
   return (
-    <div className={clsx('col col--3 margin-vert--md')}>
+    <div className={clsx('col col--12 col--sm--6 col--lg--3 margin-vert--md')}>
       <div className="text--center padding-horiz--md">
         <div className={styles.featureIconWrap}>
           <Icon />

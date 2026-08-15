@@ -68,6 +68,58 @@
   display: none; /* 隐藏导航栏文字，只保留 logo */
 }
 
+/* ============ 移动端适配 ============ */
+
+/* 文档表格：允许横向滚动，小屏缩小字号（防内容撑破布局） */
+.markdown table {
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media screen and (max-width: 576px) {
+  /* 表格字号缩小，提高可读性 */
+  .markdown table {
+    font-size: 0.85rem;
+  }
+
+  /* 首页 Hero 手机端更紧凑 */
+  .hero__title {
+    font-size: 2rem !important;
+  }
+  .hero__subtitle {
+    font-size: 1.05rem !important;
+  }
+
+  /* Hero 按钮堆叠为整行 */
+  .heroBanner .button {
+    display: block;
+    width: 100%;
+    margin-bottom: 0.75rem;
+  }
+
+  /* 导航栏手机抽屉：项目分组间距加大，减少杂乱 */
+  .navbar-sidebar .menu__list-item {
+    margin-top: 0.35rem;
+  }
+  .navbar-sidebar .menu__link {
+    font-size: 1rem;
+    padding: 0.6rem 0.75rem;
+  }
+
+  /* 文档页左右 padding 收窄，最大化内容区 */
+  .theme-doc-markdown {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+
+  /* 上下页导航按钮占满整行，方便点按 */
+  .pagination-nav__link {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}
+
 /* 页脚 logo 完整显示（官网原版白色完整 logo，放大清晰显示） */
 /* 根因：Infima 默认 --ifm-footer-logo-max-width: min(30rem,90vw) = 480px，
    196x40 logo 放大后宽 490px 超限被截断。直接在 .footer__logo 强制覆盖。 */
