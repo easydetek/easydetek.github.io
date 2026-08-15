@@ -2,7 +2,6 @@
 # 文档：https://decapcms.org/docs/configuration/
 
 # GitHub 后端（通过 OAuth 代理认证）
-# 文档人员用 GitHub 账号登录，国内也可用 Gitee（见底部注释）
 backend:
   name: github
   repo: easydetek/easydetek.github.io
@@ -12,41 +11,41 @@ backend:
   app_id: Ov23liggofFVPfvYHeRt
 
 # 切换到 Gitee 后端（国内访问更快）：
-# 把上面 backend 整块替换为（auth_endpoint 不能带 query，代理用 /auth-gitee 区分上游）：
+# auth_endpoint 不能带 query，代理用 /auth-gitee 区分上游
 # backend:
 #   name: github           # Decap 用 github driver，但 repo 指向 Gitee
 #   repo: easydetek/easydetek.gitee.io
 #   branch: main
 #   base_url: https://docs.easydetek.com
 #   auth_endpoint: /auth-gitee
-#   app_id: d58ff3e8306802db1b29f98b3e5bed4b2a022b0510a046a4eb95b5bf6c50a476
+
+logo_url: /img/logo-navbar.png
 
 # 媒体资源（产品图片上传目录）
 media_folder: "static/img/products"
 public_folder: "/img/products"
 
-# 本地开发模式（需配合 decap-cms-proxy-server，默认关闭）
-# 本地开发时改为 true 并运行 npx decap-cms-proxy-server
 local_backend: false
 
-# 站点 URL（用于生成链接）
 site_url: https://docs.easydetek.com
 
-# 登录页 Logo（Decap CMS 官方支持字段：设置后会渲染 <img alt="Logo" src=...>）
-# 不设置时，Decap 渲染默认箭头图标（内联 SVG），无法用 CSS img 选择器覆盖。
-logo_url: /img/logo-navbar.png
-
 # ===== 内容集合（各产品线）=====
+# 使用 nested 嵌套集合：支持在子目录（频段/协议分组）中创建文档
+# 编辑器里「Add folder」可新建分组目录
 
 collections:
-  # ---------- 模组产品线 ----------
+  # ---------- 模组产品线（按频段分组） ----------
   - name: "modules"
     label: "模组产品线"
     label_singular: "模组产品"
     folder: "modules_docs"
     create: true
     delete: true
-    summary: "{{title}} - {{band}} ({{feature}})"
+    summary: "{{title}} - {{band}}"
+    editor:
+      preview: true
+    nested:
+      depth: 2        # 支持一层子目录（5.8GHz/ 24GHz/ 等）
     fields:
       - { label: "产品型号", name: "title", widget: "string", hint: "如 EDC116" }
       - { label: "侧边栏排序", name: "sidebar_position", widget: "number", default: 1, required: false }
@@ -65,15 +64,18 @@ collections:
       - { label: "安装方式", name: "mount", widget: "string", required: false }
       - { label: "应用场景", name: "scene", widget: "text", required: false }
       - { label: "正文内容", name: "body", widget: "markdown", required: false, hint: "额外的详细说明（可选）" }
+    # 新建时可选择放入的分组（meta.path 由 nested 提供）
 
-  # ---------- 独立传感器产品线 ----------
+  # ---------- 独立传感器产品线（按协议分组） ----------
   - name: "sensors"
     label: "传感器产品线"
     label_singular: "传感器产品"
     folder: "sensors_docs"
     create: true
     delete: true
-    summary: "{{title}} - {{band}} ({{feature}})"
+    summary: "{{title}} - {{protocol}}"
+    nested:
+      depth: 2
     fields:
       - { label: "产品型号", name: "title", widget: "string", hint: "如 EDQ286B" }
       - { label: "侧边栏排序", name: "sidebar_position", widget: "number", default: 1, required: false }
@@ -83,11 +85,11 @@ collections:
         widget: "select"
         default: "24GHz"
         options: ["5.8GHz", "24GHz", "60GHz"]
-      - label: "通信协议"
+      - label: "通信协议分组"
         name: "protocol"
         widget: "select"
         default: "BLE蓝牙"
-        options: ["AC强电", "Tuya(涂鸦)", "Mijia(米家)", "BLE蓝牙", "DC干接点", "60GHz康养"]
+        options: ["AC强电", "Tuya-涂鸦", "Mijia-米家", "BLE蓝牙", "DC干接点", "60GHz康养"]
       - { label: "感应方式", name: "sense", widget: "string", required: false, hint: "如 可见光+毫米波" }
       - { label: "感应距离", name: "range", widget: "string", required: false }
       - { label: "输入电压", name: "vin", widget: "string", required: false }
@@ -109,8 +111,10 @@ collections:
     create: true
     delete: true
     summary: "{{title}} - {{feature}}"
+    nested:
+      depth: 2
     fields:
-      - { label: "产品型号", name: "title", widget: "string", hint: "如 EDC591" }
+      - { label: "产品型号", name: "title", widget: "string", hint: "如 EDC59A" }
       - { label: "侧边栏排序", name: "sidebar_position", widget: "number", default: 1, required: false }
       - { label: "产品特点", name: "feature", widget: "string" }
       - { label: "感应距离", name: "range", widget: "string", required: false }
@@ -127,18 +131,22 @@ collections:
     folder: "opensource_docs"
     create: true
     delete: true
+    nested:
+      depth: 2
     fields:
       - { label: "标题", name: "title", widget: "string" }
       - { label: "侧边栏排序", name: "sidebar_position", widget: "number", default: 1, required: false }
       - { label: "正文内容", name: "body", widget: "markdown" }
 
-  # ---------- 通用文档（快速开始等） ----------
+  # ---------- 通用文档（快速开始 + FAQ） ----------
   - name: "docs"
     label: "通用文档"
     label_singular: "通用文档"
     folder: "docs"
     create: true
     delete: true
+    nested:
+      depth: 3        # docs/faq/通用问题/ 有两层
     fields:
       - { label: "标题", name: "title", widget: "string" }
       - { label: "侧边栏排序", name: "sidebar_position", widget: "number", default: 1, required: false }
@@ -151,10 +159,10 @@ collections:
     folder: "blog"
     create: true
     delete: true
-    summary: "{{title}} ({{date}})"
+    summary: "{{title}}"
     fields:
       - { label: "标题", name: "title", widget: "string" }
-      - { label: "发布日期", name: "date", widget: "datetime" }
+      - { label: "发布日期", name: "date", widget: "datetime", format: "YYYY-MM-DD" }
       - { label: "URL 标识", name: "slug", widget: "string", required: false, hint: "如 edc116-ceiling-light" }
       - label: "标签"
         name: "tags"
