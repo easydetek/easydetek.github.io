@@ -102,9 +102,11 @@ const server = http.createServer(async (req, res) => {
     return jsonRes(res, 200, { ok: true, service: 'decap-cms-oauth-proxy' });
   }
 
-  // ---- 认证入口：CMS 打开 /auth?provider=github|gitee ----
-  if (path === '/auth') {
-    const provider = (parsed.query.provider || 'github').toLowerCase();
+  // ---- 认证入口：CMS 打开 /auth?provider=github|gitee（或 /auth-gitee）----
+  if (path === '/auth' || path === '/auth-gitee') {
+    const provider = path === '/auth-gitee'
+      ? 'gitee'
+      : (parsed.query.provider || 'github').toLowerCase();
     const cfg = provider === 'gitee' ? GITEE : GITHUB;
 
     if (!cfg.id || !cfg.secret) {
@@ -151,12 +153,38 @@ const server = http.createServer(async (req, res) => {
 
       const token = tokenRes.access_token;
       if (token) {
-        console.log(`[callback] ${provider} token 换取成功`);
-        // 回传给 CMS（Decap 约定的 hash 格式）
-        return redirect(
-          res,
-          `${ORIGIN}/admin/#/callback?access_token=${token}&provider=${provider === 'gitee' ? 'github' : 'github'}`
-        );
+        console.log(`[callback] ${provider} token 换取成功，返回握手页`);
+        // Decap CMS 用 postMessage 弹窗握手协议，不解析 URL token。
+        // 这里必须返回一个带握手脚本的 HTML 页面：
+        //   弹窗 → opener: "authorizing:github"
+        //   主窗口 echo 后 → 弹窗 → opener: "authorization:github:success:{token,provider}"
+        // 注意：provider 前缀必须是 'github'（Decap 的 github driver 固定值，Gitee 走同 driver）
+        const html = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>登录成功</title></head>
+<body style="font-family:system-ui;padding:40px;text-align:center">
+<p>✅ 登录成功，正在返回编辑器…</p>
+<script>
+(function () {
+  var PROVIDER = 'github';
+  var TOKEN = ${JSON.stringify(token)};
+  var opener = window.opener;
+  if (!opener) {
+    document.body.innerHTML = '<p>⚠️ 主窗口已丢失。</p><p>请关闭本窗口，回到后台页面重新点击登录。</p>';
+    return;
+  }
+  window.addEventListener('message', function (e) {
+    if (e.data === 'authorizing:' + PROVIDER) {
+      opener.postMessage(
+        'authorization:' + PROVIDER + ':success:' + JSON.stringify({ token: TOKEN, provider: PROVIDER }),
+        e.origin
+      );
+      window.close();
+    }
+  });
+  opener.postMessage('authorizing:' + PROVIDER, ${JSON.stringify(ORIGIN)});
+})();
+</script></body></html>`;
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        return res.end(html);
       }
       console.log(`[callback] token 换取失败:`, JSON.stringify(tokenRes).slice(0, 300));
       return jsonRes(res, 400, { error: 'token 换取失败', detail: tokenRes });

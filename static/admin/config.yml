@@ -12,13 +12,13 @@ backend:
   app_id: Ov23liggofFVPfvYHeRt
 
 # 切换到 Gitee 后端（国内访问更快）：
-# 把上面 backend 整块替换为：
+# 把上面 backend 整块替换为（auth_endpoint 不能带 query，代理用 /auth-gitee 区分上游）：
 # backend:
 #   name: github           # Decap 用 github driver，但 repo 指向 Gitee
 #   repo: easydetek/easydetek.gitee.io
 #   branch: main
 #   base_url: https://docs.easydetek.com
-#   auth_endpoint: /auth?provider=gitee
+#   auth_endpoint: /auth-gitee
 #   app_id: d58ff3e8306802db1b29f98b3e5bed4b2a022b0510a046a4eb95b5bf6c50a476
 
 # 媒体资源（产品图片上传目录）
