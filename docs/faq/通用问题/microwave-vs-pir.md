@@ -1,4 +1,5 @@
 ---
+title: "微波感应和 PIR 红外感应有什么区别？"
 sidebar_position: 1
 ---
 

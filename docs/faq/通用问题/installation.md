@@ -1,4 +1,5 @@
 ---
+title: "安装注意事项"
 sidebar_position: 2
 ---
 

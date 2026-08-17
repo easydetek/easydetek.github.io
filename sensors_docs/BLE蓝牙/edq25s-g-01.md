@@ -1,4 +1,5 @@
 ---
+title: "EDQ25S-G-01"
 sidebar_position: 1
 ---
 

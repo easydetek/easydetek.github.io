@@ -1,4 +1,5 @@
 ---
+title: "技术中心首页"
 sidebar_position: 1
 slug: /intro
 ---

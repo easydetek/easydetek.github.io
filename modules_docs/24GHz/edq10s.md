@@ -1,4 +1,5 @@
 ---
+title: "EDQ10S"
 sidebar_position: 1
 ---
 

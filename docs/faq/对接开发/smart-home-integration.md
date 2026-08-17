@@ -1,4 +1,5 @@
 ---
+title: "智能家居平台接入"
 sidebar_position: 2
 ---
 

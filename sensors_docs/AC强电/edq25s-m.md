@@ -1,4 +1,5 @@
 ---
+title: "EDQ25S-M"
 sidebar_position: 1
 ---
 

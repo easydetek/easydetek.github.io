@@ -1,4 +1,5 @@
 ---
+title: "模组和成品传感器怎么选？"
 sidebar_position: 2
 ---
 
