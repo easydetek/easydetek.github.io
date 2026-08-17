@@ -47,6 +47,7 @@ collections:
       preview: true
     nested:
       depth: 2        # 支持一层子目录（5.8GHz/ 24GHz/ 等）
+      subfolders: false
     meta:
       path:
         label: "分组（选已有或输入新名称）"
@@ -83,6 +84,7 @@ collections:
     summary: "{{title}}"
     nested:
       depth: 2
+      subfolders: false
     meta:
       path:
         label: "分组（选已有或输入新名称）"
@@ -126,6 +128,7 @@ collections:
     summary: "{{title}}"
     nested:
       depth: 2
+      subfolders: false
     meta:
       path:
         label: "分组（选已有或输入新名称）"
@@ -152,6 +155,7 @@ collections:
     delete: true
     nested:
       depth: 2
+      subfolders: false
     meta:
       path:
         label: "分组（选已有或输入新名称）"
@@ -172,6 +176,7 @@ collections:
     delete: true
     nested:
       depth: 3        # docs/faq/通用问题/ 有两层
+      subfolders: false
     meta:
       path:
         label: "分组（选已有或输入新名称）"
