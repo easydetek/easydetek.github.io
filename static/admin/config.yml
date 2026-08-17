@@ -39,9 +39,10 @@ collections:
     label: "模组产品线"
     label_singular: "模组产品"
     folder: "modules_docs"
+    extension: md
     create: true
     delete: true
-    summary: "{{title}} - {{band}}"
+    summary: "{{title}}"
     editor:
       preview: true
     nested:
@@ -76,9 +77,10 @@ collections:
     label: "传感器产品线"
     label_singular: "传感器产品"
     folder: "sensors_docs"
+    extension: md
     create: true
     delete: true
-    summary: "{{title}} - {{protocol}}"
+    summary: "{{title}}"
     nested:
       depth: 2
     meta:
@@ -118,9 +120,10 @@ collections:
     label: "配件产品线"
     label_singular: "配件产品"
     folder: "accessories_docs"
+    extension: md
     create: true
     delete: true
-    summary: "{{title}} - {{feature}}"
+    summary: "{{title}}"
     nested:
       depth: 2
     meta:
@@ -144,6 +147,7 @@ collections:
     label: "开发者资源"
     label_singular: "开发者文档"
     folder: "opensource_docs"
+    extension: md
     create: true
     delete: true
     nested:
@@ -163,6 +167,7 @@ collections:
     label: "通用文档"
     label_singular: "通用文档"
     folder: "docs"
+    extension: md
     create: true
     delete: true
     nested:
@@ -182,6 +187,7 @@ collections:
     label: "应用案例"
     label_singular: "案例"
     folder: "blog"
+    extension: md
     create: true
     delete: true
     summary: "{{title}}"
