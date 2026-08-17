@@ -46,6 +46,11 @@ collections:
       preview: true
     nested:
       depth: 2        # 支持一层子目录（5.8GHz/ 24GHz/ 等）
+    meta:
+      path:
+        label: "分组（选已有或输入新名称）"
+        widget: string
+        index_file: "_index"
     fields:
       - { label: "产品型号", name: "title", widget: "string", hint: "如 EDC116" }
       - { label: "侧边栏排序", name: "sidebar_position", widget: "number", default: 1, required: false }
@@ -76,6 +81,11 @@ collections:
     summary: "{{title}} - {{protocol}}"
     nested:
       depth: 2
+    meta:
+      path:
+        label: "分组（选已有或输入新名称）"
+        widget: string
+        index_file: "_index"
     fields:
       - { label: "产品型号", name: "title", widget: "string", hint: "如 EDQ286B" }
       - { label: "侧边栏排序", name: "sidebar_position", widget: "number", default: 1, required: false }
@@ -113,6 +123,11 @@ collections:
     summary: "{{title}} - {{feature}}"
     nested:
       depth: 2
+    meta:
+      path:
+        label: "分组（选已有或输入新名称）"
+        widget: string
+        index_file: "_index"
     fields:
       - { label: "产品型号", name: "title", widget: "string", hint: "如 EDC59A" }
       - { label: "侧边栏排序", name: "sidebar_position", widget: "number", default: 1, required: false }
@@ -133,6 +148,11 @@ collections:
     delete: true
     nested:
       depth: 2
+    meta:
+      path:
+        label: "分组（选已有或输入新名称）"
+        widget: string
+        index_file: "_index"
     fields:
       - { label: "标题", name: "title", widget: "string" }
       - { label: "侧边栏排序", name: "sidebar_position", widget: "number", default: 1, required: false }
@@ -147,6 +167,11 @@ collections:
     delete: true
     nested:
       depth: 3        # docs/faq/通用问题/ 有两层
+    meta:
+      path:
+        label: "分组（选已有或输入新名称）"
+        widget: string
+        index_file: "_index"
     fields:
       - { label: "标题", name: "title", widget: "string" }
       - { label: "侧边栏排序", name: "sidebar_position", widget: "number", default: 1, required: false }
