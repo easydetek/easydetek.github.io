@@ -219,9 +219,7 @@ const config: Config = {
           position: 'right',
           dropdownActiveClassDisabled: true,
         },
-        // 案例与项目展示页移到右侧，避免左侧过满
-        {to: '/blog', label: '案例', position: 'right'},
-        {to: '/open-source', label: '开源项目', position: 'right'},
+        // 案例已并入开发者栏目侧边栏；开源项目入口与开发者栏目重复，已移除
         {
           type: 'localeDropdown',
           position: 'right',
@@ -256,7 +254,6 @@ const config: Config = {
           items: [
             {label: '快速开始', to: '/docs/intro'},
             {label: '应用案例', to: '/blog'},
-            {label: '开源项目', to: '/open-source'},
             {
               label: 'GitHub',
               href: REPO_URL,
