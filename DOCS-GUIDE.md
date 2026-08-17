@@ -208,3 +208,44 @@ Git 有完整版本历史，任何修改都可以回退。联系开发者恢复�
 ### Q: 需要帮助？
 - 技术支持：support@easydetek.com
 - 文档有问题：点击任意文档底部的「👎 需改进」反馈
+
+---
+
+# 附录：本地开发与构建（内部使用）
+
+## 本地开发
+
+```bash
+npm install
+npm run start                      # 中文开发服务器
+npm run start -- --locale en       # 英文预览
+```
+
+## 构建与预览
+
+```bash
+npm run build        # 构建到 build/
+npm run serve        # 本地预览构建产物
+```
+
+## 目录结构速查
+
+```
+docs/                    通用文档（快速开始、FAQ）
+modules_docs/            模组产品线（按频段子目录）
+sensors_docs/            传感器产品线（按协议子目录）
+accessories_docs/        配件产品线
+opensource_docs/         开发者资源
+blog/                    应用案例
+static/admin/            CMS 管理后台配置
+oauth-proxy/             CMS 登录 OAuth 代理
+versioned_docs*/         各产品线历史版本快照
+docusaurus.config.ts     站点总配置
+deploy.sh                服务器一键部署脚本
+```
+
+## 如何翻译成英文？
+
+- UI 文案：i18n/en/code.json、navbar.json、footer.json
+- 文档：i18n/en/docusaurus-plugin-content-docs*/ 下同名 .md
+- 重新生成翻译骨架：npm run write-translations -- --locale en
