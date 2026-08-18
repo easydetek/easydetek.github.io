@@ -1,4 +1,5 @@
 ---
+title: "EDQ25L-Y-01"
 sidebar_position: 1
 ---
 
