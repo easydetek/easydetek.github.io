@@ -38,7 +38,10 @@ function walkMd(dir) {
 }
 
 function readTitle(mdPath) {
-  const head = fs.readFileSync(mdPath, 'utf8').split('---')[0] || '';
+  // 正确提取 frontmatter 块（文件以 --- 开头，split('---')[0] 是空串，不能用）
+  const text = fs.readFileSync(mdPath, 'utf8');
+  const fm = text.match(/^---\n([\s\S]*?)\n---/);
+  const head = fm ? fm[1] : '';
   const m = head.match(/^title:\s*"([^"]+)"/m) || head.match(/^title:\s*(.+)$/m);
   return (m ? m[1] : path.basename(mdPath, '.md')).trim();
 }
