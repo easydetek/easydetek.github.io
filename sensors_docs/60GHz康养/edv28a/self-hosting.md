@@ -122,7 +122,7 @@ curl -s -X POST "http://localhost:18083/api/v5/authentication/password_based%3Ab
 #   访问控制 -> 客户端认证 -> 内置数据库 -> 用户管理 -> 添加用户
 ```
 
-> 说明：EasyDetek 云端使用的 `REDACTED / REDACTED` 是平台侧共享账号，自建环境**请创建自己的独立账号**，不要复用。
+> 说明：自建环境请创建**自己的独立设备接入账号**，不要与 EasyDetek 云端共享账号，也不要在多环境间复用同一账号。
 
 #### 方案 B：部署 Mosquitto（轻量方案）
 

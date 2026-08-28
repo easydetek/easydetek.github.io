@@ -23,8 +23,7 @@ sidebar_position: 2
 | Broker | EMQX（地址与端口以对接分配信息为准，默认 TCP `1883`） |
 | 协议版本 | MQTT 3.1.1 / 5.0 |
 | 鉴权方式 | 账号密码认证（Username/Password） |
-| Username | `REDACTED` |
-| Password | `REDACTED` |
+| Username / Password | 以对接分配信息为准（不对外公开，请联系 EasyDetek 获取） |
 | Keep Alive | 建议 60 秒 |
 | Client ID | 设备端自行生成，需保证全局唯一（建议用 device_id） |
 | QoS | 平台所有收发消息均使用 **QoS 1（AtLeastOnce）**，Retain 均为 `false` |

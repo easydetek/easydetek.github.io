@@ -40,6 +40,14 @@ body = parts
   })
   .join('');
 
+// 凭据脱敏：平台 MQTT 账号不对外公开（2026-08 起从文档站移除）
+// 注意：正则用通用模式匹配，不在脚本里保留真实凭据字面量
+const before = body;
+body = body
+  .replace(/\| Username \| `[^`\n]*` \|\n\| Password \| `[^`\n]*` \|/g, '| Username / Password | 以对接分配信息为准（不对外公开，请联系 EasyDetek 获取） |')
+  .replace(/> [^\n>]*是平台侧共享账号[^\n]*/g, '> 说明：自建环境请创建**自己的独立设备接入账号**，不要与 EasyDetek 云端共享账号，也不要在多环境间复用同一账号。');
+if (body !== before) console.log('🔒 已对凭据字段脱敏');
+
 // 子页面为独立文档，章节保持原文档层级（## N.），无需标题降级
 const page = [
   '---',
