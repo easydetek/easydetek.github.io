@@ -46,13 +46,13 @@ collections:
     editor:
       preview: true
     nested:
-      depth: 2        # 支持一层子目录（5.8GHz/ 24GHz/ 等）
+      depth: 3        # 分组/产品文件夹/子文档 三层
       subfolders: false
     meta:
       path:
         label: "分组（选已有或输入新名称）"
         widget: string
-        index_file: "_index"
+        index_file: "index"
     fields:
       - { label: "产品型号", name: "title", widget: "string", hint: "如 EDC116" }
       - { label: "侧边栏排序", name: "sidebar_position", widget: "number", default: 1, required: false }
@@ -83,13 +83,13 @@ collections:
     delete: true
     summary: "{{title}}"
     nested:
-      depth: 2
+      depth: 3
       subfolders: false
     meta:
       path:
         label: "分组（选已有或输入新名称）"
         widget: string
-        index_file: "_index"
+        index_file: "index"
     fields:
       - { label: "产品型号", name: "title", widget: "string", hint: "如 EDQ286B" }
       - { label: "侧边栏排序", name: "sidebar_position", widget: "number", default: 1, required: false }
@@ -127,13 +127,13 @@ collections:
     delete: true
     summary: "{{title}}"
     nested:
-      depth: 2
+      depth: 3
       subfolders: false
     meta:
       path:
         label: "分组（选已有或输入新名称）"
         widget: string
-        index_file: "_index"
+        index_file: "index"
     fields:
       - { label: "产品型号", name: "title", widget: "string", hint: "如 EDC59A" }
       - { label: "侧边栏排序", name: "sidebar_position", widget: "number", default: 1, required: false }
@@ -154,13 +154,13 @@ collections:
     create: true
     delete: true
     nested:
-      depth: 2
+      depth: 3
       subfolders: false
     meta:
       path:
         label: "分组（选已有或输入新名称）"
         widget: string
-        index_file: "_index"
+        index_file: "index"
     fields:
       - { label: "标题", name: "title", widget: "string" }
       - { label: "侧边栏排序", name: "sidebar_position", widget: "number", default: 1, required: false }
@@ -181,7 +181,7 @@ collections:
       path:
         label: "分组（选已有或输入新名称）"
         widget: string
-        index_file: "_index"
+        index_file: "index"
     fields:
       - { label: "标题", name: "title", widget: "string" }
       - { label: "侧边栏排序", name: "sidebar_position", widget: "number", default: 1, required: false }

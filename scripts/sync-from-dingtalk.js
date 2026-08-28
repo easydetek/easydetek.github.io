@@ -159,7 +159,7 @@ function generateDoc(product, type) {
 
   const typeLabel = type === 'sensors' ? '独立传感器' : type === 'accessories' ? '配件' : '模组';
 
-  let md = `---\nsidebar_position: 1\n---\n\n# ${model}\n\n> ${feature}｜${band ? band + ' ' : ''}${typeLabel}${statusBadge ? '｜' + statusBadge : ''}\n\n## 核心特点\n\n${feature || '详见规格书'}\n\n## 规格参数\n\n| 参数 | 规格 |\n|------|------|\n`;
+  let md = `---\ntitle: "${model}"\nsidebar_position: 1\n---\n\n# ${model}\n\n> ${feature}｜${band ? band + ' ' : ''}${typeLabel}${statusBadge ? '｜' + statusBadge : ''}\n\n## 核心特点\n\n${feature || '详见规格书'}\n\n## 规格参数\n\n| 参数 | 规格 |\n|------|------|\n`;
   if (band) md += `| 工作频段 | ${band} |\n`;
   if (sense) md += `| 感应方式 | ${sense} |\n`;
   if (func) md += `| 感应距离 | ${func} |\n`;
@@ -222,25 +222,30 @@ function main() {
       // 生成文档（只更新产品页，不删现有文件）
       let count = 0;
       for (const product of products) {
-        const filename = product._model.toLowerCase().replace(/[^a-z0-9]/g, '-') + '.md';
+        const base = product._model.toLowerCase().replace(/[^a-z0-9]/g, '-');
         const md = generateDoc(product, source.targetDir);
-        // 尝试在子目录中找已有文件位置（保持分组结构）
+        // 产品文件夹结构：<目标目录>/<分组>/<型号>/index.md
         const targetDir = path.resolve(source.targetDir);
         const possiblePaths = [
-          path.join(targetDir, filename), // 根目录
+          path.join(targetDir, base, 'index.md'), // 根目录产品
           ...fs.existsSync(targetDir)
             ? fs.readdirSync(targetDir, { withFileTypes: true })
                 .filter((d) => d.isDirectory())
-                .map((d) => path.join(targetDir, d.name, filename))
-            : [], // 子目录
+                .map((d) => path.join(targetDir, d.name, base, 'index.md'))
+            : [], // 分组子目录产品
         ];
         const existingPath = possiblePaths.find((p) => fs.existsSync(p));
-        const outputPath = existingPath || path.join(targetDir, filename);
+        let outputPath = existingPath || path.join(targetDir, base, 'index.md');
         if (existingPath) {
-          fs.writeFileSync(existingPath, md);
+          // 只更新头部（frontmatter～规格参数/应用信息），保留既有 FAQ/相关文档/规格书区域
+          const existing = fs.readFileSync(existingPath, 'utf8');
+          const faqIdx = existing.indexOf('## 相关 FAQ');
+          const output = faqIdx > -1 ? md.trimEnd() + '\n\n' + existing.slice(faqIdx) : md;
+          fs.writeFileSync(existingPath, output);
           count++;
         } else {
-          // 新产品，放根目录（后续手动归类到分组）
+          // 新产品：创建产品文件夹（后续手动归类到分组）
+          fs.mkdirSync(path.dirname(outputPath), { recursive: true });
           fs.writeFileSync(outputPath, md);
           count++;
           console.log(`  🆕 新产品: ${product._model} → ${path.relative('.', outputPath)}`);

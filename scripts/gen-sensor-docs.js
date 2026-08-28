@@ -28,11 +28,28 @@ const sensorData = [
 ];
 
 function genDoc(p) {
-  const dir = path.resolve(__dirname, '..', 'sensors_docs');
-  const filename = p.model.toLowerCase().replace(/[^a-z0-9]/g,'-') + '.md';
+  const root = path.resolve(__dirname, '..', 'sensors_docs');
+  const base = p.model.toLowerCase().replace(/[^a-z0-9]/g,'-');
+  // 产品文件夹结构：<分类>/<型号>/index.md；在既有目录树中定位产品文件夹
+  let dir = null;
+  const stack = [root];
+  while (stack.length) {
+    const cur = stack.pop();
+    for (const e of fs.readdirSync(cur, { withFileTypes: true })) {
+      if (!e.isDirectory()) continue;
+      const sub = path.join(cur, e.name);
+      if (e.name === base && fs.existsSync(path.join(sub, 'index.md'))) { dir = sub; break; }
+      stack.push(sub);
+    }
+    if (dir) break;
+  }
+  if (!dir) dir = path.join(root, base);
+  fs.mkdirSync(dir, { recursive: true });
+
   const badge = p.priority ? `（${p.priority}）` : '';
   const statusBadge = p.status === '正式量产' ? '✅ 正式量产' : '🔧 研发测试';
-  const md = `---
+  let md = `---
+title: "${p.model}"
 sidebar_position: 1
 ---
 
@@ -55,14 +72,26 @@ ${p.alias ? `**新命名：** ${p.alias}\n` : ''}## 规格参数
 | 调参方式 | ${p.tune} |
 | 安装方式 | ${p.mount} |
 | 产品状态 | ${p.status} |
-
-:::info 规格书
-完整规格书请从[产品知识库](https://alidocs.dingtalk.com/i/nodes/14lgGw3P8vvQRw5dUg2exAlg85daZ90D)获取，或联系 support@easydetek.com。
-:::
 `;
-  fs.writeFileSync(path.join(dir, filename), md);
-  return filename;
+  const filePath = path.join(dir, 'index.md');
+  if (fs.existsSync(filePath)) {
+    // 保留既有「相关 FAQ / 相关文档 / 规格书」区域，避免抹掉子文档导航
+    const existing = fs.readFileSync(filePath, 'utf8');
+    const faqIdx = existing.indexOf('## 相关 FAQ');
+    if (faqIdx > -1) {
+      md = md.trimEnd() + '\n\n' + existing.slice(faqIdx);
+    } else {
+      md += `\n:::info 规格书\n完整规格书请从[产品知识库](https://alidocs.dingtalk.com/i/nodes/14lgGw3P8vvQRw5dUg2exAlg85daZ90D)获取，或联系 support@easydetek.com。\n:::\n`;
+    }
+  } else {
+    md += `\n:::info 规格书\n完整规格书请从[产品知识库](https://alidocs.dingtalk.com/i/nodes/14lgGw3P8vvQRw5dUg2exAlg85daZ90D)获取，或联系 support@easydetek.com。\n:::\n`;
+  }
+  fs.writeFileSync(filePath, md);
+  return path.relative(root, filePath);
 }
 
-sensorData.forEach(genDoc);
-console.log('✅ 已生成 ' + sensorData.length + ' 个独立传感器文档 → sensors_docs/');
+sensorData.forEach((p) => {
+  const rel = genDoc(p);
+  console.log('  ✅ ' + rel);
+});
+console.log('✅ 已生成 ' + sensorData.length + ' 个独立传感器文档 → sensors_docs/<分类>/<型号>/index.md');

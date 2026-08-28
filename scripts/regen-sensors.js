@@ -16,9 +16,9 @@ const GROUP_MAP = {
   'EDC287-Y-02':'AC强电', 'EDC211D':'AC强电', 'EDQ252-Y-04':'AC强电',
   'EDQ282-Y-03':'AC强电', 'EDQ25L-Y-01':'AC强电', 'EDQ253-S-01':'AC强电', 'EDQ25S-M':'AC强电',
   // Tuya(涂鸦)
-  'EDQ253-Y-03':'Tuya(涂鸦)', 'EDQ251-T-Z':'Tuya(涂鸦)', 'EDQ201-T-01':'Tuya(涂鸦)', 'EDV25P-T-02':'Tuya(涂鸦)',
+  'EDQ253-Y-03':'Tuya-涂鸦', 'EDQ251-T-Z':'Tuya-涂鸦', 'EDQ201-T-01':'Tuya-涂鸦', 'EDV25P-T-02':'Tuya-涂鸦',
   // Mijia(米家)
-  'EDQ25M-Y-01':'Mijia(米家)', 'EDQ201-M-01':'Mijia(米家)',
+  'EDQ25M-Y-01':'Mijia-米家', 'EDQ201-M-01':'Mijia-米家',
   // BLE蓝牙
   'EDQ286B':'BLE蓝牙', 'EDQ251-G-01':'BLE蓝牙', 'EDQ25S-G-01':'BLE蓝牙',
   // DC干接点
@@ -65,7 +65,7 @@ function parseProducts(rows) {
 
 function genDoc(p) {
   const statusBadge = p.status.includes('量产') ? '✅ 正式量产' : '🔧 研发测试';
-  let md = `---\nsidebar_position: 1\n---\n\n# ${p.model}\n\n> ${p.feature || p.model}｜${p.band || ''} 独立传感器｜${statusBadge}\n\n## 核心特点\n\n${p.feature || '详见规格书'}\n`;
+  let md = `---\ntitle: "${p.model}"\nsidebar_position: 1\n---\n\n# ${p.model}\n\n> ${p.feature || p.model}｜${p.band || ''} 独立传感器｜${statusBadge}\n\n## 核心特点\n\n${p.feature || '详见规格书'}\n`;
 
   if (p.alias && p.alias !== p.model) {
     md += `\n**新命名：** ${p.alias}\n`;
@@ -107,13 +107,28 @@ for (const p of products) {
     console.log(`  ⚠️ ${p.model}: 无分组映射，跳过`);
     continue;
   }
-  const filename = p.model.toLowerCase().replace(/[^a-z0-9]/g, '-') + '.md';
-  const dir = path.join(SENSORS_DIR, group);
-  const filePath = path.join(dir, filename);
+  const base = p.model.toLowerCase().replace(/[^a-z0-9]/g, '-');
+  // 产品文件夹结构：<分组>/<型号>/index.md
+  const dir = path.join(SENSORS_DIR, group, base);
+  const filePath = path.join(dir, 'index.md');
 
-  const md = genDoc(p);
+  const head = genDoc(p); // 只重新生成头部（frontmatter～规格参数/应用信息）
+  let md = head;
+  if (fs.existsSync(filePath)) {
+    const existing = fs.readFileSync(filePath, 'utf8');
+    const faqIdx = existing.indexOf('## 相关 FAQ');
+    if (faqIdx > -1) {
+      // 保留既有「相关 FAQ / 相关文档 / 规格书」及之后全部内容，避免抹掉子文档导航
+      md = head.trimEnd() + '\n\n' + existing.slice(faqIdx);
+    } else {
+      console.log(`  ⚠️ ${p.model}: 既有 index.md 无「## 相关 FAQ」标记，整页覆盖`);
+    }
+  } else {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
   fs.writeFileSync(filePath, md);
-  console.log(`  ✅ ${p.model} → ${group}/${filename}`);
+  console.log(`  ✅ ${p.model} → ${group}/${base}/index.md`);
   count++;
 }
 

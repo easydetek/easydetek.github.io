@@ -17,15 +17,37 @@
 
 传感器                sensors_docs/        20 款（按协议分组）
  ├── AC强电/          AC 强电输出（7款）
- ├── Tuya(涂鸦)/      Tuya Zigbee（4款）
- ├── Mijia(米家)/     米家平台（2款）
+ ├── Tuya-涂鸦/       Tuya Zigbee（4款）
+ ├── Mijia-米家/      米家平台（2款）
  ├── BLE蓝牙/         BLE 蓝牙（3款）
  ├── DC干接点/        DC 干接点（2款）
  └── 60GHz康养/       60GHz 康养监护（2款）
 
 配件                  accessories_docs/    4 款
 开发者                opensource_docs/     待填充
+
+每个产品 = 一个文件夹：<型号>/index.md（概览页）+ 可选子文档（如 mqtt.md）
 ```
+
+---
+
+## 产品文档目录约定
+
+2026-08 起产品文档采用「**一个产品一个文件夹**」结构：
+
+```
+sensors_docs/60GHz康养/edv28a/
+├── _category_.json     侧边栏产品名（自动生成，一般不用改）
+├── index.md            产品主页：核心特点 / 规格参数 / 相关 FAQ / 相关文档
+├── mqtt.md             子文档：MQTT 对接协议（可选）
+└── self-hosting.md     子文档：自建服务器指南（可选）
+```
+
+- **index.md** 固定为产品概览（特点、规格参数表、FAQ），末尾用「## 相关文档」列出子文档链接
+- **子文档命名**建议用语义名：`mqtt`（通信协议）、`self-hosting`（自建指南）、`datasheet`（规格书）等
+- 子文档 frontmatter 需有 `title`（侧边栏显示名）和递增的 `sidebar_position`（index=1，子文档 2、3…）
+- URL 规则：主页 `/sensors/60GHz康养/edv28a`，子文档 `/sensors/60GHz康养/edv28a/mqtt`
+- 修改 current 文档后，记得**同步 versioned 快照**（`sensors_versioned_docs/version-1.0.0/` 下同名文件）——线上正式路由由快照提供
 
 ---
 
@@ -143,14 +165,15 @@ docker compose -f docker-compose.local.yml up -d --build
 
 ### 方式 2：手动新建文件（单个产品）
 
-1. 在对应产品线目录的子目录下新建 `.md` 文件：
+1. 在对应产品线目录的分组子目录下，**新建产品文件夹**及 `index.md`：
    ```
-   modules_docs/5.8GHz/edv999.md
+   modules_docs/5.8GHz/edv999/index.md
    ```
 
 2. 填写内容（参考模板）：
    ```markdown
    ---
+   title: "EDV999"
    sidebar_position: 5
    ---
 
@@ -185,18 +208,23 @@ docker compose -f docker-compose.local.yml up -d --build
    :::
    ```
 
-3. 提交并重建
+3. 同目录放一个 `_category_.json`（侧边栏产品名）：
+   ```json
+   { "label": "EDV999", "collapsed": false, "collapsible": true }
+   ```
+
+4. 提交并重建
 
 ---
 
 ## 常见问题
 
 ### Q: 文件名怎么命名？
-型号小写，非字母数字用连字符。如 `EDC116` → `edc116.md`，`EDV163-N-01` → `edv163-n-01.md`。
+型号小写、非字母数字用连字符，作为**产品文件夹名**，主页固定叫 `index.md`。如 `EDC116` → `edc116/index.md`，`EDV163-N-01` → `edv163-n-01/index.md`；子文档用语义名（`mqtt.md`、`self-hosting.md` 等）。
 
 ### Q: 产品放到哪个子目录？
 - 模组按频段：`5.8GHz/` `10.5GHz/` `24GHz/` `60GHz/`
-- 传感器按协议：`AC强电/` `Tuya(涂鸦)/` `Mijia(米家)/` `BLE蓝牙/` `DC干接点/` `60GHz康养/`
+- 传感器按协议：`AC强电/` `Tuya-涂鸦/` `Mijia-米家/` `BLE蓝牙/` `DC干接点/` `60GHz康养/`
 
 ### Q: 修改后多久生效？
 - GitHub 网页编辑：提交后 3-5 分钟自动生效
