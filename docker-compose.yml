@@ -20,7 +20,7 @@ services:
     container_name: easydetek-site
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8080:80"   # 只监听本地 8080，由宿主机 Nginx 反代
+      - "127.0.0.1:8092:80"   # 只监听本地 8092，由宿主机 Nginx 反代（8080 被业务平台 easydetek-web 占用）
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost/"]
       interval: 30s
@@ -38,4 +38,4 @@ services:
       - ORIGIN=https://docs.easydetek.com
       - PORT=8081
     ports:
-      - "127.0.0.1:8081:8081"  # 只监听本地 8081，由宿主机 Nginx 反代
+      - "127.0.0.1:8093:8081"  # 只监听本地 8093，由宿主机 Nginx /auth 反代
