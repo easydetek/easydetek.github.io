@@ -36,7 +36,7 @@ import TabItem from '@theme/TabItem';
 ## Support
 
 - Spot an error? Click **"Edit this page"** at the bottom of any page to submit a PR.
-- Business: business@easydetek.com ｜ Support: support@easydetek.com
+- Business: sales@easydetek.com ｜ Support: support@easydetek.com
 
 :::note Note
 The English translation of product documentation is being progressively completed. The Chinese version is the authoritative source.

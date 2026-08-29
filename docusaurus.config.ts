@@ -263,7 +263,7 @@ const config: Config = {
         {
           title: '联系我们',
           items: [
-            {label: '商务合作', href: 'mailto:business@easydetek.com'},
+            {label: '商务合作', href: 'mailto:sales@easydetek.com'},
             {label: '技术支持', href: 'mailto:support@easydetek.com'},
             {label: '📝 管理后台', href: 'https://docs.easydetek.com/admin/'},
           ],

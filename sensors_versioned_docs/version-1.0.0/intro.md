@@ -35,4 +35,4 @@ EasyDetek 独立传感器成品，即装即用，含外壳与接线端子，支�
 - **[EDQ253-Y-03](/sensors/Tuya-%E6%B6%82%E9%B8%A6/edq253-y-03)**：涂鸦 Zigbee，支持左右分区探测
 - **[EDQ282-Y-03](/sensors/AC%E5%BC%BA%E7%94%B5/edq282-y-03)**：双路强电输出，可独立控制两路灯
 
-如需选型建议或样品，联系 business@easydetek.com。
+如需选型建议或样品，联系 sales@easydetek.com。

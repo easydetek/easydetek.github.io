@@ -123,7 +123,7 @@ export default function OpenSourcePage(): ReactNode {
             </Link>
             <Link
               className="button button--secondary button--lg"
-              href="mailto:business@easydetek.com">
+              href="mailto:sales@easydetek.com">
               <Translate id="oss.more.contact">商务合作</Translate>
             </Link>
           </div>

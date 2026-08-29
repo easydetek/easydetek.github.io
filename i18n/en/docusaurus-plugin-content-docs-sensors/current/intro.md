@@ -34,7 +34,7 @@ EasyDetek standalone sensors are ready-to-install products with housing and term
 - **EDQ253-Y-03**: Tuya Zigbee, left-right zone detection
 - **EDQ282-Y-03**: Dual-channel mains output, independent control of two lines
 
-For selection advice or samples, contact business@easydetek.com.
+For selection advice or samples, contact sales@easydetek.com.
 
 :::note Note
 English translation of individual product pages is in progress. The Chinese version is the authoritative source.
