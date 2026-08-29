@@ -1,0 +1,10 @@
+{
+  "label": "开发板",
+  "position": 2,
+  "collapsed": true,
+  "collapsible": true,
+  "link": {
+    "type": "generated-index",
+    "description": "EasyDetek 开发板：硬件资料与开发资源下载。"
+  }
+}
