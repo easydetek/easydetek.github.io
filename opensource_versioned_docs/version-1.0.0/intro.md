@@ -17,9 +17,10 @@ EasyDetek 开发者资源中心：应用案例、开源项目、SDK 与对接指
 
 我们将 SDK、示例代码与参考设计开源，帮助开发者与集成商快速上手：
 
-- 雷达传感器通用 SDK
-- Arduino / ESP32 对接示例
-- KNX 设备描述文件与 ETS 模板
-- 参考设计与硬件原理图
+- **[ed_radar – ESP-IDF 雷达组件库](/opensource/ed-radar)**：多款易探雷达（EDQ152 / EDV163 / EDV11P 等）的统一抽象接口层，支持 ESP Component Registry 一键引入（[GitHub](https://github.com/fuhua817/ed_radar)）
+- 雷达传感器通用 SDK（整理中）
+- Arduino / ESP32 对接示例（整理中）
+- KNX 设备描述文件与 ETS 模板（整理中）
+- 参考设计与硬件原理图（整理中）
 
 如需新增开源项目文档，在 CMS「开发者资源」分类中新建即可。
