@@ -32,7 +32,7 @@ EasyDetek 产品使用的频段均为 ISM（工业、科学、医疗）免授权
 
 每款产品的认证状态见：
 - 对应型号的[规格书 PDF](/modules/intro)
-- 或联系 sales@easydetek.com 获取认证证书
+- 或联系 sales@easydetek.com / +8615361626679 获取认证证书
 
 ## 相关 FAQ
 

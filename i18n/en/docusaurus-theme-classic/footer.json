@@ -35,9 +35,9 @@
     "message": "GitHub",
     "description": "The label of footer link with label=GitHub linking to https://github.com/easydetek/easydetek.github.io"
   },
-  "link.item.label.商务合作": {
-    "message": "Business",
-    "description": "The label of footer link with label=商务合作 linking to mailto:sales@easydetek.com"
+  "link.item.label.商务合作：sales@easydetek.com / +8615361626679": {
+    "message": "Business: sales@easydetek.com / +8615361626679",
+    "description": "The label of footer link with label=商务合作：sales@easydetek.com / +8615361626679 linking to mailto:sales@easydetek.com"
   },
   "link.item.label.技术支持": {
     "message": "Support",

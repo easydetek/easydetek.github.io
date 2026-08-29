@@ -46,4 +46,4 @@ import styles from './intro.module.css';
 | 小夜灯 | 5.8G/24G | EDC189C、EDQ10S、EDQ155 |
 | 体征监测 / 智能床 | 60GHz | EDV151 |
 
-如需完整规格书或样品，联系 sales@easydetek.com。
+如需完整规格书或样品，联系 sales@easydetek.com / +8615361626679。

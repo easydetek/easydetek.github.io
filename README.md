@@ -20,7 +20,7 @@ Docusaurus 3 · React 19 · Docker · nginx
 ## 反馈
 
 - 文档问题：点击任意文档底部的反馈按钮
-- 商务合作：sales@easydetek.com
+- 商务合作：sales@easydetek.com / +8615361626679
 - 技术支持：support@easydetek.com
 
 ---

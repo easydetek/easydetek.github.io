@@ -36,4 +36,4 @@ import TabItem from '@theme/TabItem';
 ## 反馈与支持
 
 - 文档有误或可改进？点击每页底部的 **「编辑此页」** 直接提交 PR。
-- 商务合作：sales@easydetek.com ｜ 技术支持：support@easydetek.com
+- 商务合作：sales@easydetek.com / +8615361626679 ｜ 技术支持：support@easydetek.com

@@ -23,7 +23,7 @@ All accessories are designed for **high-bay applications**:
 - 🏟️ Sports halls
 - 💡 High-bay lights, canopy lights
 
-For more accessory information, contact sales@easydetek.com.
+For more accessory information, contact sales@easydetek.com / +8615361626679.
 
 :::note Note
 English translation of individual product pages is in progress. The Chinese version is the authoritative source.

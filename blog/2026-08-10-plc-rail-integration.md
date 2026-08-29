@@ -22,5 +22,5 @@ tags: [cluster, smarthome]
 - 🏗️ **改造友好**：适合存量项目升级
 
 :::info
-PLC 方案细节需结合具体项目，欢迎联系 sales@easydetek.com 沟通。
+PLC 方案细节需结合具体项目，欢迎联系 sales@easydetek.com / +8615361626679 沟通。
 :::

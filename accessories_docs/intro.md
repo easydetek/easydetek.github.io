@@ -24,4 +24,4 @@ EasyDetek 配件为高空及大空间照明场景提供高灵敏度光控感应�
 - 🏟️ 体育馆
 - 💡 高空灯、高棚灯
 
-如需更多配件信息，联系 sales@easydetek.com。
+如需更多配件信息，联系 sales@easydetek.com / +8615361626679。

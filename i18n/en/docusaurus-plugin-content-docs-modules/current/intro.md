@@ -46,7 +46,7 @@ EasyDetek embedded radar modules cover the full **5.8GHz / 10.5GHz / 24GHz / 60G
 | Night light | 5.8G/24G | EDC189C, EDQ10S, EDQ155 |
 | Vitals / smart bed | 60GHz | EDV151 |
 
-For datasheets or samples, contact sales@easydetek.com.
+For datasheets or samples, contact sales@easydetek.com / +8615361626679.
 
 :::note Note
 English translation of individual product pages is in progress. The Chinese version is the authoritative source.
