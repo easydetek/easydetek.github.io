@@ -11,7 +11,7 @@ sidebar_position: 1
 
 EDK60 面向需要快速验证 EasyDetek 雷达方案的工程师与集成商：硬件参考设计完全开放，原理图等设计资料可直接从[附件与资料](./attachments)页获取，便于二次开发与产品化设计。
 
-结合 [ed_radar – ESP-IDF 雷达组件库](/opensource/ed-radar)，可在 ESP-IDF 中以统一 API 快速对接 EasyDetek 雷达模组，无需关注各型号的协议细节。
+结合 [ed_radar 组件](/opensource/开源软件/ed-radar)，可在 ESP-IDF 中以统一 API 快速对接 EasyDetek 雷达模组，无需关注各型号的协议细节。
 
 ## 资料下载
 

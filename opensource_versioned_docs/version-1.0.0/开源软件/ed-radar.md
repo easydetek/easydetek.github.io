@@ -1,9 +1,9 @@
 ---
-title: "ed_radar – ESP-IDF 雷达组件库"
+title: "ed_radar 组件"
 sidebar_position: 1
 ---
 
-# ed_radar ESP-IDF 雷达组件库
+# ed_radar 组件
 
 > 面向多款易探雷达的**面向对象抽象接口层**：用统一的结构与 API 控制不同型号，屏蔽各型号数据组包、解包细节及结构体差异，并内置型号能力不兼容拦截｜标准 ESP-IDF 组件（IDF v5.0+）｜当前版本 **1.0.1**
 

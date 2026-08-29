@@ -1,0 +1,10 @@
+{
+  "label": "开源软件",
+  "position": 1,
+  "collapsed": true,
+  "collapsible": true,
+  "link": {
+    "type": "generated-index",
+    "description": "EasyDetek 开源软件：组件库、SDK 与工具。"
+  }
+}
