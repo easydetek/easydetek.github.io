@@ -1,10 +1,10 @@
 {
-  "label": "开发板",
+  "label": "开源硬件",
   "position": 2,
   "collapsed": true,
   "collapsible": true,
   "link": {
     "type": "generated-index",
-    "description": "EasyDetek 开发板：硬件资料与开发资源下载。"
+    "description": "EasyDetek 开源硬件：原理图与设计资料下载。"
   }
 }
