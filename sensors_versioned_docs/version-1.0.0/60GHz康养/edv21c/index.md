@@ -1,9 +1,9 @@
 ---
-title: "EDV21C-W-01"
+title: "EDV21C"
 sidebar_position: 1
 ---
 
-# EDV21C-W-01
+# EDV21C
 
 > 支持人数统计，60GHz强抗干扰天线，蓝牙小程序调节｜60GHz 独立传感器｜🔧 研发测试
 

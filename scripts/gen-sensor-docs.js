@@ -24,7 +24,7 @@ const sensorData = [
   {model:'EDQ25S-M',status:'研发测试',band:'24GHz',sense:'可见光+PIR+毫米波',vin:'AC 90V~260V',output:'米家平台',tune:'BLE',mount:'顶装嵌入式55mm开孔',feature:'双鉴协同感知，接入米家平台调节参数'},
   {model:'EDV25P-T-02',status:'研发测试',band:'60GHz',sense:'可见光+毫米波',vin:'AC 90V~260V',output:'BLE、Tuya Zigbee',tune:'BLE、Tuya',mount:'顶装嵌入式55mm开孔',feature:'支持跌倒检测、人员存在判断，支持联动报警系统或护理平台'},
   {model:'EDV28A',status:'研发测试',band:'60GHz',sense:'毫米波',vin:'DC 5V',output:'Cat1',tune:'Cat1',mount:'卡扣',feature:'实时探测胸腔毫米级微动，智能监测睡眠阶段，智能识别异常呼吸或心率'},
-  {model:'EDV21C-W-01',status:'研发测试',band:'60GHz',sense:'毫米波',vin:'AC 90V~260V',output:'MQTT、BLE',tune:'BLE',mount:'顶装嵌入式55mm开孔',feature:'支持人数统计，60GHz强抗干扰天线，蓝牙小程序调节'},
+  {model:'EDV21C',status:'研发测试',band:'60GHz',sense:'毫米波',vin:'AC 90V~260V',output:'MQTT、BLE',tune:'BLE',mount:'顶装嵌入式55mm开孔',feature:'支持人数统计，60GHz强抗干扰天线，蓝牙小程序调节'},
 ];
 
 function genDoc(p) {

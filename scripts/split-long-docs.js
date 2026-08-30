@@ -123,7 +123,7 @@ function processEdv21c(file) {
 
 const TASKS = [
   { matcher: /60GHz康养[/\\]edv28a[/\\]index\.md$/, fn: processEdv28a },
-  { matcher: /60GHz康养[/\\]edv21c-w-01[/\\]index\.md$/, fn: processEdv21c },
+  { matcher: /60GHz康养[/\\]edv21c[/\\]index\.md$/, fn: processEdv21c },
 ];
 
 let done = 0;

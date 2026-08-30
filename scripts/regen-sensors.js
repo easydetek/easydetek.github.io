@@ -24,7 +24,7 @@ const GROUP_MAP = {
   // DC干接点
   'EDC286-Y-06':'DC干接点', 'EDQ286-Y-06':'DC干接点',
   // 60GHz康养
-  'EDV28A':'60GHz康养', 'EDV21C-W-01':'60GHz康养',
+  'EDV28A':'60GHz康养', 'EDV21C':'60GHz康养',
 };
 
 function readSheet() {

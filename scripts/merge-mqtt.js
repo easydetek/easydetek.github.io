@@ -7,7 +7,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const MQTT_FILE = path.join(ROOT, 'mqtt-temp.md');
-const PROD_FILE = path.join(ROOT, 'sensors_docs', '60GHz康养', 'edv21c-w-01.md');
+const PROD_FILE = path.join(ROOT, 'sensors_docs', '60GHz康养', 'edv21c.md');
 
 const raw = fs.readFileSync(MQTT_FILE, 'utf8');
 const lines = raw.split('\n');
