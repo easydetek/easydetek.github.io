@@ -129,3 +129,56 @@
 .footer__bottom {
   text-align: center;
 }
+
+/* ============================================================
+   导航栏「新品」HOT 动态徽标（电商促销风：红橙渐变 + 火焰 + 跳动）
+   通过 href 定位 newproducts 导航项，不影响其他栏目
+   ============================================================ */
+.navbar a[href*='/newproducts'] {
+  position: relative;
+}
+
+.navbar a[href*='/newproducts']::after {
+  content: '🔥 HOT';
+  position: absolute;
+  top: -4px;
+  right: -30px;
+  padding: 1px 6px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(180, 30, 0, 0.45);
+  background: linear-gradient(135deg, #ff4d1c 0%, #ff2d55 60%, #ff5e3a 100%);
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(255, 45, 85, 0.45);
+  transform-origin: center bottom;
+  animation: ed-hot-bounce 1.2s ease-in-out infinite;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+@keyframes ed-hot-bounce {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 2px 6px rgba(255, 45, 85, 0.45);
+  }
+  30% {
+    transform: translateY(-3px) scale(1.12);
+    box-shadow: 0 5px 12px rgba(255, 45, 85, 0.6);
+  }
+  60% {
+    transform: translateY(-1px) scale(0.96);
+    box-shadow: 0 1px 4px rgba(255, 45, 85, 0.4);
+  }
+}
+
+/* 用户偏好减少动效时静止显示 */
+@media (prefers-reduced-motion: reduce) {
+  .navbar a[href*='/newproducts']::after {
+    animation: none;
+  }
+}
+
