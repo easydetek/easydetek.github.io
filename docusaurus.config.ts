@@ -139,6 +139,19 @@ const config: Config = {
 
       },
     ],
+    // 新品产品线
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'newproducts',
+        path: 'newproducts_docs',
+        routeBasePath: 'newproducts',
+        sidebarPath: './sidebars.newproducts.ts',
+        editUrl: `${REPO_URL}/tree/main/newproducts_docs/`,
+        showLastUpdateTime: process.env.DISABLE_LAST_UPDATE !== '1',
+
+      },
+    ],
   ],
 
   // 本地离线搜索（无需 Algolia，构建时生成索引，完全离线可用）
@@ -194,6 +207,13 @@ const config: Config = {
           position: 'left',
           label: '开发者',
         },
+        {
+          type: 'docSidebar',
+          sidebarId: 'newproductsSidebar',
+          docsPluginId: 'newproducts',
+          position: 'left',
+          label: '新品',
+        },
         // 各产品线独立版本下拉（右侧）—— 上下文感知，只显示当前产品线
         {
           type: 'custom-contextAwareDocsVersionDropdown',
@@ -246,6 +266,7 @@ const config: Config = {
             {label: '模组', to: '/modules/intro'},
             {label: '传感器', to: '/sensors/intro'},
             {label: '配件', to: '/accessories/intro'},
+            {label: '新品', to: '/newproducts/intro'},
             {label: '开源生态', to: '/opensource/intro'},
           ],
         },
