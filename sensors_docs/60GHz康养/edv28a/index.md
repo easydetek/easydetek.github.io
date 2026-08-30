@@ -31,8 +31,7 @@ sidebar_position: 1
 
 ## 相关文档
 
-- [MQTT 对接协议](./mqtt)：设备接入 EasyDetek 云端/自建服务器的完整通信协议（主题、payload、时序、OTA）
-- [自建 MQTT 服务器对接指南](./self-hosting)：客户自建 Broker（EMQX/Mosquitto）与服务端应用开发指南
+- [MQTT 对接协议](./mqtt)：设备接入 EasyDetek 云端/自建服务器的完整通信协议（主题、payload、时序、OTA；第 6 章含自建 MQTT 服务器对接指南）
 
 :::info 规格书
 完整规格书请从[产品知识库](https://alidocs.dingtalk.com/i/nodes/jb9Y4gmKWr7QPe5kijjeBnmQVGXn6lpz)获取，或联系 support@easydetek.com。
