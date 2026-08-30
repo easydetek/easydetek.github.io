@@ -9,7 +9,7 @@
     "message": "Open Source"
   },
   "oss.sdk.desc": {
-    "message": "General-purpose SDK for EasyDetek radar sensors — wraps UART communication, data parsing and configuration, supporting the EDV series."
+    "message": "ed_radar — an object-oriented ESP-IDF abstraction layer for multiple EasyDetek radars (EDQ152 / EDV163 / EDV11P). Unified APIs hide protocol details, installable directly via the ESP Component Registry."
   },
   "oss.arduino.desc": {
     "message": "Integration example of the EDC116 embedded module with Arduino / ESP32, demonstrating lighting presence control."

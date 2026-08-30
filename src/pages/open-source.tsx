@@ -17,16 +17,16 @@ type Project = {
 
 const projects: Project[] = [
   {
-    name: 'easydetek-radar-sdk',
+    name: 'ed_radar',
     description: (
       <Translate id="oss.sdk.desc">
-        EasyDetek 雷达传感器通用 SDK，封装串口通信、数据解析与配置接口，支持 EDV 系列。
+        面向 EDQ152 / EDV163 / EDV11P 等多款易探雷达的 ESP-IDF 面向对象抽象接口层：统一 API 屏蔽协议细节，支持 ESP Component Registry 一键引入。
       </Translate>
     ),
-    language: 'C / Python',
+    language: 'C',
     stars: '⭐ 待补充',
-    url: 'https://github.com/easydetek/easydetek-radar-sdk',
-    tags: ['SDK', '串口', 'EDV 系列'],
+    url: 'https://github.com/fuhua817/ed_radar',
+    tags: ['ESP-IDF', '雷达组件', 'ESP Registry'],
   },
   {
     name: 'edc116-arduino-example',
