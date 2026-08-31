@@ -6,6 +6,8 @@ sidebar_position: 1
 
 > 可调人存雷达｜60GHz 模组
 
+![EDV163 模组正反面](./assets/edv163.png)
+
 ## 核心特点
 
 可调人存雷达
