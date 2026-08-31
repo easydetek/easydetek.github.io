@@ -6,6 +6,8 @@ sidebar_position: 1
 
 > 雷达+蓝牙版本｜模组
 
+![EDQ15L 模组](./assets/edq15l.png)
+
 ## 核心特点
 
 雷达+蓝牙版本
