@@ -6,6 +6,8 @@ sidebar_position: 1
 
 > 感应距离稳定｜模组
 
+![EDC189C 模组](./assets/edc189c.png)
+
 ## 核心特点
 
 感应距离稳定

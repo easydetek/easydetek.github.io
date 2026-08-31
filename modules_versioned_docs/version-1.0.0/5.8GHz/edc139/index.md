@@ -6,6 +6,8 @@ sidebar_position: 1
 
 > 高性能天线｜模组
 
+![EDC139 模组](./assets/edc139.png)
+
 ## 核心特点
 
 高性能天线
