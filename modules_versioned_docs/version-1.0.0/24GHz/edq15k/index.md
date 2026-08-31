@@ -6,6 +6,8 @@ sidebar_position: 1
 
 > 高性能款｜模组
 
+![EDQ15K 模组](./assets/edq15k.png)
+
 ## 核心特点
 
 高性能款
