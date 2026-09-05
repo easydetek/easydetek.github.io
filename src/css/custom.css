@@ -70,16 +70,20 @@
 
 /* ============ 移动端适配 ============ */
 
-/* 文档表格：允许横向滚动，小屏缩小字号（防内容撑破布局） */
+/* 文档表格：整体等宽撑满内容区，列数与列宽由浏览器按内容自动分配 */
 .markdown table {
-  display: block;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  display: table;
+  width: 100%;
+  table-layout: auto;
 }
 
 @media screen and (max-width: 576px) {
-  /* 表格字号缩小，提高可读性 */
+  /* 小屏：块级 + 横向滚动，缩小字号（防内容撑破布局） */
   .markdown table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     font-size: 0.85rem;
   }
 
