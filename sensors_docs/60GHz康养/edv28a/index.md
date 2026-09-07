@@ -31,8 +31,12 @@ sidebar_position: 1
 
 ## 相关文档
 
+- [使用说明下载](./usage-manuals)：标准版与床垫版两份使用说明书（PDF）
 - [MQTT 对接协议](./mqtt)：设备接入 EasyDetek 云端/自建服务器的完整通信协议（主题、payload、时序、OTA；第 6 章含自建 MQTT 服务器对接指南）
 
-:::info 规格书
-完整规格书请从[产品知识库](https://alidocs.dingtalk.com/i/nodes/jb9Y4gmKWr7QPe5kijjeBnmQVGXn6lpz)获取，或联系 support@easydetek.com。
+:::info 规格书下载
+- [📄 中文版规格书 EDV28A-N-01（V1.1）](./assets/EDV28A-N-01%E8%A7%84%E6%A0%BC%E4%B9%A6-V1.1-202607022.pdf)
+- [📄 Specification (EN) EDV28A-N-01（V1.0）](./assets/EDV28A-N-01-Specification-V1.0-20260706.pdf)
+
+更多历史资料请从[产品知识库](https://alidocs.dingtalk.com/i/nodes/jb9Y4gmKWr7QPe5kijjeBnmQVGXn6lpz)获取，或联系 support@easydetek.com。
 :::
