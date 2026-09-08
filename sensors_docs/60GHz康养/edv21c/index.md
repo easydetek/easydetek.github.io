@@ -35,9 +35,16 @@ sidebar_position: 1
 - [安装注意事项](/docs/faq/通用问题/installation)
 - [供电与接线](/docs/faq/通用问题/power-wiring)
 
+## 产品形态
+
+- [标准版（WiFi MQTT）](./standard-wifi-mqtt)：WiFi 接入，MQTT 上云，蓝牙小程序调节
+- [KNX 版](./knx)：KNX 总线接入，适用于智能楼宇系统集成
+- [RS485（Modbus）版](./rs485-modbus)：Modbus-RTU 协议，接入 PLC/网关等工业系统
+
 ## 相关文档
 
-- [MQTT 协议说明](./mqtt)：设备上行遥测（occupancy/status/targets/zones/info/fall）与服务器下行配置、控制的完整协议
+- [使用说明（在线版）](./usage-manuals)：EDV21C 系列产品介绍、外形结构与性能参数、安装指南、小程序使用指南与协议规范（附 PDF 下载）
+- [MQTT 协议说明](./standard-wifi-mqtt/mqtt)：设备上行遥测（occupancy/status/targets/zones/info/fall）与服务器下行配置、控制的完整协议
 
 :::info 规格书
 完整规格书请从[产品知识库](https://alidocs.dingtalk.com/i/nodes/jb9Y4gmKWr7QPe5kijjeBnmQVGXn6lpz)获取，或联系 support@easydetek.com。
