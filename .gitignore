@@ -23,3 +23,9 @@ gitee_sync_key*
 # ZCode 本地工具文件（计划/会话缓存，不入库）
 .zcode/
 .env
+
+# 本地构建预览产物（docusaurus build --out-dir buildlocal）
+/buildlocal
+
+# 本地调试日志（构建/预览/依赖恢复过程）
+*.log
