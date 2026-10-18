@@ -16,7 +16,11 @@ const GROUP_MAP = {
   'EDC287-Y-02':'AC强电', 'EDC211D':'AC强电', 'EDQ252-Y-04':'AC强电',
   'EDQ282-Y-03':'AC强电', 'EDQ25L-Y-01':'AC强电', 'EDQ253-S-01':'AC强电', 'EDQ25S-M':'AC强电',
   // Tuya(涂鸦)
-  'EDQ253-Y-03':'Tuya-涂鸦', 'EDQ251-T-Z':'Tuya-涂鸦', 'EDQ201-T-01':'Tuya-涂鸦', 'EDV25P-T-02':'Tuya-涂鸦',
+  // 注意：EDV25P-T-02 不在此映射。该型号已归入「60GHz康养」下的 edv25p 系列
+  // （按变体手工维护的多层结构：edv25p/tuya-zigbee 等），与脚本「一型号一目录」的
+  // 模板不兼容；若在此映射会生成冲突目录 60GHz康养/edv25p-t-02/。
+  // 其入口页保留在 sensors_docs/Tuya-涂鸦/edv25p-t-02/（仅跳转，不再由脚本生成）。
+  'EDQ253-Y-03':'Tuya-涂鸦', 'EDQ251-T-Z':'Tuya-涂鸦', 'EDQ201-T-01':'Tuya-涂鸦',
   // Mijia(米家)
   'EDQ25M-Y-01':'Mijia-米家', 'EDQ201-M-01':'Mijia-米家',
   // BLE蓝牙

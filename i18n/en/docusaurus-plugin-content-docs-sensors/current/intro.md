@@ -24,7 +24,7 @@ EasyDetek standalone sensors are ready-to-install products with housing and term
 - **EDQ253-S-01** (recommended): AC + BLE, high sensitivity, ceiling recessed
 
 ### 👵 Fall Detection / Eldercare
-- **EDV25P-T-02**: 60GHz, fall detection and presence, alarm system integration
+- **EDV25P**: 60GHz, fall detection and presence, alarm system integration (RS485 / KNX / Tuya Zigbee versions)
 - **EDV28A**: 60GHz + Cat1, breathing/heart rate monitoring, sleep stage analysis
 
 ### 🔋 Ultra-low Power Wireless

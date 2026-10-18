@@ -25,7 +25,7 @@ EasyDetek 独立传感器成品，即装即用，含外壳与接线端子，支�
 - **[EDQ253-S-01](/sensors/AC%E5%BC%BA%E7%94%B5/edq253-s-01)**（主推）：AC 供电 + BLE，高灵敏度，吸顶嵌入式
 
 ### 👵 跌倒检测 / 康养监护
-- **[EDV25P-T-02](/sensors/Tuya-%E6%B6%82%E9%B8%A6/edv25p-t-02)**：60GHz，支持跌倒检测、人员存在判断，可联动报警系统
+- **[EDV25P](/sensors/60GHz%E5%BA%B7%E5%85%BB/edv25p)**：60GHz，支持跌倒检测、人员存在判断，可联动报警系统（三版本：RS485 / KNX / 涂鸦 Zigbee）
 - **[EDV28A](/sensors/60GHz%E5%BA%B7%E5%85%BB/edv28a)**：60GHz + Cat1，监测呼吸心率，睡眠阶段分析
 
 ### 🔋 超低功耗无线
