@@ -35,6 +35,15 @@
   "oss.more.contact": {
     "message": "sales@easydetek.com / +8615361626679"
   },
+  "oss.recipe.title": {
+    "message": "Reference Recipes"
+  },
+  "oss.recipe.subtitle": {
+    "message": "End-to-end, reproducible solutions from hardware to host software — with firmware, browser-based flashing tools and hands-on tuning notes."
+  },
+  "oss.recipe.edk60.desc": {
+    "message": "EDK60 (ESP32-C6) paired with the EDV151 vital-signs radar measures respiration rate and heart rate without contact, streaming data to a PC over native USB with no driver required. Includes measured results, serial protocol and key tuning experience."
+  },
   "homepage.feature.radar.title": {
     "message": "Microwave / mmWave Radar Sensing"
   },

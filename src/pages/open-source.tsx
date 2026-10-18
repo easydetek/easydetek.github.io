@@ -15,6 +15,15 @@ type Project = {
   tags: string[];
 };
 
+type Recipe = {
+  title: string;
+  summary: ReactNode;
+  /** 主文档地址：标题与「查看完整案例」都指向它 */
+  docUrl: string;
+  links: {label: string; to: string}[];
+  tags: string[];
+};
+
 const projects: Project[] = [
   {
     name: 'ed_radar',
@@ -28,29 +37,32 @@ const projects: Project[] = [
     url: 'https://github.com/fuhua817/ed_radar',
     tags: ['ESP-IDF', '雷达组件', 'ESP Registry'],
   },
+];
+
+// 站内「参考方案 / Recipes」：从硬件到上位机的完整可复现教程，
+// 与本页上方的开源仓库卡片区分开（条目指向站内文档、固件与在线工具）。
+const recipes: Recipe[] = [
   {
-    name: 'edc116-arduino-example',
-    description: (
-      <Translate id="oss.arduino.desc">
-        EDC116 嵌入式模组与 Arduino / ESP32 的对接示例，演示灯具人体感应控制。
+    title: 'EDK60 + EDV151 呼吸心率监测方案',
+    docUrl: '/blog/edk60-vital-signs-edv151',
+    summary: (
+      <Translate id="oss.recipe.edk60.desc">
+        用 EDK60（ESP32-C6）搭载 EDV151 生命体征雷达，非接触测量呼吸率与心率，经原生 USB 免驱实时上报 PC；含实测数据、串口协议与关键调参经验。
       </Translate>
     ),
-    language: 'C++',
-    stars: '⭐ 待补充',
-    url: 'https://github.com/easydetek/edc116-arduino-example',
-    tags: ['Arduino', 'EDC116', '示例'],
-  },
-  {
-    name: 'knx-edq25sk-profile',
-    description: (
-      <Translate id="oss.knx.desc">
-        EDQ25S-K 双鉴 KNX 传感器的 KNX 设备描述文件与 ETS 工程模板。
-      </Translate>
-    ),
-    language: 'KNX',
-    stars: '⭐ 待补充',
-    url: 'https://github.com/easydetek/knx-edq25sk-profile',
-    tags: ['KNX', 'EDQ25S-K', '双鉴'],
+    // 注意：static/ 下的文件不是站点路由，必须加 pathname:// 前缀，
+    // 否则 Docusaurus 的 broken-link 检查会判定为失效链接。
+    // 前缀会让 <Link> 退化为普通 <a href> 并跳过链接校验（与站内 markdown 写法一致）。
+    links: [
+      {label: '查看完整案例', to: '/blog/edk60-vital-signs-edv151'},
+      {
+        label: '新手烧录指南',
+        to: '/opensource/%E5%BC%80%E6%BA%90%E7%A1%AC%E4%BB%B6/EDK60/flash-guide',
+      },
+      {label: '网页烧录工具', to: 'pathname:///edk60/flash.html'},
+      {label: '固件下载', to: 'pathname:///edk60/edk60_edv151_vital.bin'},
+    ],
+    tags: ['EDK60', 'EDV151', 'ESP32-C6', '生命体征'],
   },
 ];
 
@@ -84,6 +96,45 @@ function ProjectCard({project}: {project: Project}) {
   );
 }
 
+function RecipeCard({recipe}: {recipe: Recipe}) {
+  return (
+    <div className={clsx('card', styles.card)}>
+      <div className="card__header">
+        <Heading as="h3" className={styles.name}>
+          <Link to={recipe.docUrl} className={styles.link}>
+            {recipe.title}
+          </Link>
+        </Heading>
+      </div>
+      <div className="card__body">
+        <p>{recipe.summary}</p>
+      </div>
+      <div className="card__footer">
+        <div className={styles.recipeActions}>
+          {recipe.links.map((l, i) => (
+            <Link
+              key={l.label}
+              to={l.to}
+              className={clsx(
+                'button button--sm',
+                i === 0 ? 'button--primary' : 'button--secondary button--outline',
+              )}>
+              {l.label}
+            </Link>
+          ))}
+        </div>
+        <div className={clsx(styles.tags, 'margin-top--sm')}>
+          {recipe.tags.map((t) => (
+            <span key={t} className="badge badge--secondary badge--sm">
+              {t}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function OpenSourcePage(): ReactNode {
   return (
     <Layout
@@ -100,10 +151,28 @@ export default function OpenSourcePage(): ReactNode {
         </p>
         <div className="row">
           {projects.map((p) => (
-            <div key={p.name} className="col col--4 margin-vert--sm">
+            <div key={p.name} className="col col--6 margin-vert--sm">
               <ProjectCard project={p} />
             </div>
           ))}
+        </div>
+
+        <div className="margin-top--xl">
+          <Heading as="h2" className="text--center">
+            <Translate id="oss.recipe.title">参考方案</Translate>
+          </Heading>
+          <p className="text--center margin-bottom--lg">
+            <Translate id="oss.recipe.subtitle">
+              从硬件到上位机的完整可复现方案，附固件、在线烧录工具与实战调参记录。
+            </Translate>
+          </p>
+          <div className="row">
+            {recipes.map((r) => (
+              <div key={r.title} className="col col--12 margin-vert--sm">
+                <RecipeCard recipe={r} />
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className={styles.cta}>

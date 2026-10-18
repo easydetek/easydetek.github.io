@@ -12,6 +12,12 @@
   text-decoration: none;
 }
 
+/* 卡片标题链接的悬停反馈：提示「可点击进入」 */
+.link:hover {
+  color: var(--ifm-link-color);
+  text-decoration: underline;
+}
+
 .meta {
   display: flex;
   align-items: center;
@@ -46,5 +52,13 @@
   display: flex;
   justify-content: center;
   gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* 「参考方案 / Recipes」卡片内的操作按钮组（左对齐、可换行） */
+.recipeActions {
+  display: flex;
+  justify-content: flex-start;
+  gap: 0.6rem;
   flex-wrap: wrap;
 }

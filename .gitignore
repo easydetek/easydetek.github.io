@@ -24,8 +24,8 @@ gitee_sync_key*
 .zcode/
 .env
 
-# 本地构建预览产物（docusaurus build --out-dir buildlocal）
-/buildlocal
+# 本地构建预览产物（docusaurus build --out-dir buildlocal / --locale 单独构建的产物）
+/buildlocal*
 
 # 本地调试日志（构建/预览/依赖恢复过程）
 *.log
