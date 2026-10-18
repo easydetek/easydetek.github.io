@@ -1,4 +1,4 @@
-﻿---
+---
 title: "EDK60 开发板"
 sidebar_position: 1
 ---
