@@ -16,8 +16,9 @@ sidebar_position: 1
 
 ## 相关文档
 
-- [使用说明（在线版）](../usage-manuals)：EDV21C 系列产品介绍、安装指南、小程序使用指南与协议规范
+- [EDV21C-W 规格书（在线版）](./spec)：产品特征、尺寸、引脚与接线、指示灯、电气/功能参数、探测示意图与注意事项
 - [MQTT 协议说明](./mqtt)：设备上行遥测与服务器下行配置、控制的完整协议
+- [使用说明（在线版）](../usage-manuals)：EDV21C 系列产品介绍、安装指南、小程序使用指南与协议规范
 
 :::info 规格书
 更多历史资料请从[产品知识库](https://alidocs.dingtalk.com/i/nodes/jb9Y4gmKWr7QPe5kijjeBnmQVGXn6lpz)获取，或联系 support@easydetek.com。

@@ -1,6 +1,6 @@
 ---
 title: "Modbus RTU 协议说明"
-sidebar_position: 2
+sidebar_position: 3
 ---
 
 # EDV21C-4 Modbus RTU 协议说明
