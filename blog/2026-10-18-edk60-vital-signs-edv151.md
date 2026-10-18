@@ -4,6 +4,7 @@ title: EDK60 + EDV151 呼吸心率监测方案：从雷达到 PC 的完整数据
 authors: [easydetek]
 tags: [healthcare, radar]
 description: 用 EDK60 开发板搭载 EDV151 生命体征雷达，无需转串口芯片即可把心率、呼吸率实时送到 PC，附实测数据与关键调参经验
+image: /img/edk60/vital-signs-demo.jpg
 ---
 
 在睡眠监护、康养看护这类场景里，**非接触式测量呼吸与心率**一直是刚需——不能要求被测者佩戴任何东西，还要能长期稳定工作。
@@ -14,11 +15,9 @@ description: 用 EDK60 开发板搭载 EDV151 生命体征雷达，无需转串�
 
 {/* truncate */}
 
-{/* 配图占位：把照片放到 static/img/edk60/ 后，删掉下面这行的注释标记即可
-![EDK60 开发板与 EDV151 雷达模组](/img/edk60/board-overview.jpg)
+![EDK60 开发板与 EDV151 Radar Monitor 实时监测界面](/img/edk60/vital-signs-demo.jpg)
 
-*EDK60 开发板，EDV151 雷达模组插在板上的 H3 排针*
-*/}
+*EDK60（ESP32-C6）插上 EDV151 模组后，经原生 USB 接入 PC。屏幕为实时监测界面的一次采样：心率 57 bpm、呼吸率 18 bpm、距离 51 cm、体动 4 lvl —— 体动已低于 5，体征算法正常出数（原因见下文「关键发现」）*
 
 ## 场景需求
 
