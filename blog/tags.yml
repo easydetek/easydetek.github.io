@@ -22,3 +22,12 @@ custom:
   label: 定制方案
   permalink: /case/custom
   description: 客户定制化方案案例
+healthcare:
+  label: 康养监护
+  permalink: /case/healthcare
+  description: 睡眠监测、呼吸心率等健康监护应用案例
+
+radar:
+  label: 雷达方案
+  permalink: /case/radar
+  description: 毫米波雷达模组与开发板的方案集成案例
