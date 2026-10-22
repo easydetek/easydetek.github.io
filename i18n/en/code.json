@@ -23,6 +23,9 @@
   "oss.subtitle": {
     "message": "We open-source our SDKs, integration examples and reference designs to help developers and integrators get started quickly."
   },
+  "oss.edk60demos.desc": {
+    "message": "ESP-IDF demo collection for the EDK60 dev board: 17 demos selected via menuconfig, plus a board support pack, pin map, pitfalls guide, radar passthrough demos and companion web tools."
+  },
   "oss.more.title": {
     "message": "Want to know more?"
   },

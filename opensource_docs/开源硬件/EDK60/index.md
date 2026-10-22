@@ -13,6 +13,13 @@ EDK60 面向需要快速验证 EasyDetek 雷达方案的工程师与集成商：
 
 结合 [ed_radar 组件](/opensource/开源软件/ed-radar)，可在 ESP-IDF 中以统一 API 快速对接 EasyDetek 雷达模组，无需关注各型号的协议细节。
 
+## 示例工程
+
+- **[EDK60 多工程 Demo（ed_edk60_demos）](/opensource/开源软件/ed-edk60-demos)** —— 17 个 ESP-IDF demo
+  （GPIO / UART / ADC / Wi-Fi / BLE / 低功耗 / 雷达透传），一套工程用 menuconfig 单选编译，
+  含板级支持包、引脚表与避坑清单；源码仓库
+  [easydetek/ed_edk60_demos](https://github.com/easydetek/ed_edk60_demos)
+
 ## 应用案例
 
 - **[EDK60 + EDV151 呼吸心率监测方案](/blog/edk60-vital-signs-edv151)** —— 用 EDK60 搭载 EDV151 生命体征雷达，

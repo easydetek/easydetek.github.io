@@ -37,6 +37,18 @@ const projects: Project[] = [
     url: 'https://github.com/fuhua817/ed_radar',
     tags: ['ESP-IDF', '雷达组件', 'ESP Registry'],
   },
+  {
+    name: 'ed_edk60_demos',
+    description: (
+      <Translate id="oss.edk60demos.desc">
+        EDK60 开发板的 ESP-IDF 示例工程集合：17 个 demo 用 menuconfig 单选编译，含板级支持包、引脚表与避坑清单、雷达透传 demo 及配套网页工具。
+      </Translate>
+    ),
+    language: 'C',
+    stars: '⭐ 待补充',
+    url: 'https://github.com/easydetek/ed_edk60_demos',
+    tags: ['ESP-IDF', 'EDK60', '示例工程', 'ESP32-C6'],
+  },
 ];
 
 // 站内「参考方案 / Recipes」：从硬件到上位机的完整可复现教程，
