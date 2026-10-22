@@ -30,6 +30,8 @@ sidebar_position: 1
 | 应用场景 | 走廊、电梯口、楼梯间、吸顶灯、投光灯、shoplight |
 
 :::info 规格书
+📄 [EDC114-Y-05-B 规格书 PDF（V1.0 / 2026-08-12）](/pdf/edc114b.pdf)
+
 完整规格书请从[产品知识库](https://alidocs.dingtalk.com/i/nodes/jb9Y4gmKWr7QPe5kijjeBnmQVGXn6lpz)获取，或联系 support@easydetek.com。
 :::
 ## 相关 FAQ

@@ -29,5 +29,7 @@ sidebar_position: 1
 | 应用场景 | 仓库、厂房、体育馆、高空灯、高棚灯 |
 
 :::info 规格书
+📄 [EDC59A-Y-04 规格书 PDF（V1.0 / 2026-08-17）](/pdf/edc59a-y-04.pdf)
+
 完整规格书请从[产品知识库](https://alidocs.dingtalk.com/i/nodes/jb9Y4gmKWr7QPe5kijjeBnmQVGXn6lpz)获取，或联系 support@easydetek.com。
 :::

@@ -30,5 +30,7 @@ sidebar_position: 1
 - [供电与接线](/docs/faq/通用问题/power-wiring)
 
 :::info 规格书
+📄 [EDC211D 规格书 PDF（Specification 2026-08-03 · EN）](/pdf/edc211d.pdf)
+
 完整规格书请从[产品知识库](https://alidocs.dingtalk.com/i/nodes/jb9Y4gmKWr7QPe5kijjeBnmQVGXn6lpz)获取，或联系 support@easydetek.com。
 :::
