@@ -35,6 +35,10 @@
     "message": "配件",
     "description": "Navbar item with label 配件"
   },
+  "item.label.行业方案": {
+    "message": "Solutions",
+    "description": "Navbar item with label 行业方案"
+  },
   "item.label.开发者": {
     "message": "开发者",
     "description": "Navbar item with label 开发者"

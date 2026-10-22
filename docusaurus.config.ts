@@ -139,6 +139,19 @@ const config: Config = {
 
       },
     ],
+    // 行业方案产品线（按场景组织，跨型号组合）
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'solutions',
+        path: 'solutions_docs',
+        routeBasePath: 'solutions',
+        sidebarPath: './sidebars.solutions.ts',
+        editUrl: `${REPO_URL}/tree/main/solutions_docs/`,
+        showLastUpdateTime: process.env.DISABLE_LAST_UPDATE !== '1',
+
+      },
+    ],
     // 新品产品线
     [
       '@docusaurus/plugin-content-docs',
@@ -199,6 +212,13 @@ const config: Config = {
           docsPluginId: 'accessories',
           position: 'left',
           label: '配件',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'solutionsSidebar',
+          docsPluginId: 'solutions',
+          position: 'left',
+          label: '行业方案',
         },
         {
           type: 'docSidebar',
@@ -284,7 +304,9 @@ const config: Config = {
         {
           title: '联系我们',
           items: [
-            {label: '商务合作：sales@easydetek.com / +8615361626679', href: 'mailto:sales@easydetek.com'},
+            {label: '商务合作：sales@easydetek.com', href: 'mailto:sales@easydetek.com'},
+            {label: '电话：0755-27788421', href: 'tel:075527788421'},
+            {label: '手机：+8615361626679', href: 'tel:+8615361626679'},
             {label: '技术支持', href: 'mailto:support@easydetek.com'},
             {label: '📝 管理后台', href: 'https://docs.easydetek.com/admin/'},
           ],

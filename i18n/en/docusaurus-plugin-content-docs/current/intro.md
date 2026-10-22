@@ -14,7 +14,9 @@ EasyDetek is dedicated to productizing microwave / mmWave radar sensing technolo
 | 🔌 [Modules](/en/modules/intro) | Embedded radar modules (EDC116/EDC189C) for luminaires |
 | 📡 [Sensors](/en/sensors/intro) | Standalone sensor products (EDV532/EDQ55G/H/EDQ25S-K) |
 | 🔧 [Accessories](/en/accessories/intro) | Mounts, debug tools, gateways |
+| 🏨 [Solutions](/en/solutions/intro) | Turn-key sensing kits for a space (hotel guest rooms) |
 | 🔓 [Open Source](/en/opensource/intro) | SDKs, examples and reference designs |
+| 🆕 [New Products](/en/newproducts/intro) | Launches, prototype evaluation and downloads |
 
 ## Where do I start?
 
@@ -36,7 +38,11 @@ import TabItem from '@theme/TabItem';
 ## Support
 
 - Spot an error? Click **"Edit this page"** at the bottom of any page to submit a PR.
-- Business: sales@easydetek.com / +8615361626679 ｜ Support: support@easydetek.com
+- Business:
+  - sales@easydetek.com
+  - 0755-27788421
+  - +8615361626679
+- Support: support@easydetek.com
 
 :::note Note
 The English translation of product documentation is being progressively completed. The Chinese version is the authoritative source.

@@ -15,7 +15,9 @@ EasyDetek 致力于微波 / 毫米波雷达传感技术的产品化与开放生�
 | 🔌 [模组](/modules/intro) | 嵌入式雷达模组（EDC116/EDC189C），可嵌入灯具 |
 | 📡 [传感器](/sensors/intro) | 独立传感器成品（EDV532/EDQ55G/H/EDQ25S-K） |
 | 🔧 [配件](/accessories/intro) | 安装支架、调试工具、网关等配套硬件 |
+| 🏨 [行业方案](/solutions/intro) | 按空间场景组合的整机方案（酒店客房感知等） |
 | 🔓 [开源生态](/opensource/intro) | SDK、示例代码与参考设计 |
+| 🆕 [新品](/newproducts/intro) | 新品发布、原型评估与配套资料 |
 
 ## 我该如何开始？
 
@@ -37,4 +39,8 @@ import TabItem from '@theme/TabItem';
 ## 反馈与支持
 
 - 文档有误或可改进？点击每页底部的 **「编辑此页」** 直接提交 PR。
-- 商务合作：sales@easydetek.com / +8615361626679 ｜ 技术支持：support@easydetek.com
+- 商务合作：
+  - sales@easydetek.com
+  - 0755-27788421
+  - +8615361626679
+- 技术支持：support@easydetek.com
