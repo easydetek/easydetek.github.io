@@ -6,7 +6,8 @@ description: "EDK60 开发板的 ESP-IDF 示例工程仓库：17 个 demo 用 me
 
 # EDK60 多工程 Demo（ed_edk60_demos）
 
-> 仓库：[easydetek/ed_edk60_demos](https://github.com/easydetek/ed_edk60_demos) ｜ 许可：MIT
+> 仓库：[GitHub · easydetek/ed_edk60_demos](https://github.com/easydetek/ed_edk60_demos) ｜
+> 国内镜像：[Gitee · easydetek/ed_edk60_demos](https://gitee.com/easydetek/ed_edk60_demos) ｜ 许可：MIT
 
 **一套工程、多个 demo**：所有示例放在同一个 ESP-IDF 工程里，用 `idf.py menuconfig` → **EDK60 Demo → 选择要编译的 Demo** 单选一个编译运行，不用为每个 demo 切分支或换目录。
 
