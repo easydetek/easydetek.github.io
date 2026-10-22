@@ -31,3 +31,8 @@ radar:
   label: 雷达方案
   permalink: /case/radar
   description: 毫米波雷达模组与开发板的方案集成案例
+
+tracking:
+  label: 人数统计与轨迹
+  permalink: /case/tracking
+  description: 人数统计、目标定位与轨迹跟踪等人员感知应用案例
