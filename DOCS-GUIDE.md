@@ -256,6 +256,28 @@ npm run build        # 构建到 build/
 npm run serve        # 本地预览构建产物
 ```
 
+## 推送与发布（两个远端都要推）
+
+本仓库有两个远端，**每次推送必须两个都推**：
+
+| 远端 | 地址 | 用途 |
+|---|---|---|
+| `origin` | github.com/easydetek/easydetek.github.io | 主仓库，GitHub Pages 由 Actions 自动发布 |
+| `gitee` | gitee.com/easydetek/easydetek.gitee.io | 国内镜像，服务器从这里或 GitHub 拉代码 |
+
+```bash
+# 推荐：一条命令推两边（会先检查工作区是否干净）
+powershell -ExecutionPolicy Bypass -File ./scripts/push-both.ps1
+
+# 手工等价写法
+git push origin main
+git push gitee main
+```
+
+- `.github/workflows/sync-to-gitee.yml` 的自动同步**长期失败，不要依赖**；以手动双推为准。
+- 只推 GitHub 会让 Gitee 静默落后，服务器 `git pull` 会报 "Already up to date" 却拿不到新内容。
+- 推完 **不等于** 线上更新：`easydetek.github.io` 等 Actions（2–4 分钟），`docs.easydetek.com` 需在服务器手动 `git pull origin main && docker compose up -d --build`。
+
 ## 目录结构速查
 
 ```
