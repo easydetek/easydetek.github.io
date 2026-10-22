@@ -177,8 +177,8 @@ H4 的 `T` 脚与电源使能是同一个网络，插 H4 会让电源与数据�
 
 | 内容 | 入口 |
 |---|---|
-| 完整开发者教程（接线、固件、协议、排障） | [人数统计雷达 Recipe（EDV11P 侧装）](/opensource/开源硬件/EDK60/track-recipe) |
-| 帧校验工具与 30 分钟验收流程 | 随仓库提供的 `tools/edv11p_frame_check.py`（用途见 Recipe 附录 C.1） |
+| 完整开发者教程（接线、固件、协议、排障） | [人数统计雷达实施指南（EDV11P 侧装）](/opensource/开源硬件/EDK60/track-guide) |
+| 帧校验工具与 30 分钟验收流程 | 随仓库提供的 `tools/edv11p_frame_check.py`（用途见附录 C.1） |
 | 本次出图与统计脚本 | 随仓库提供的 `tools/plot_gate2_capture.py` |
 | 固件与上位机源码 | 随仓库提供；需要源码包请发邮件到 **support@easydetek.com** |
 
