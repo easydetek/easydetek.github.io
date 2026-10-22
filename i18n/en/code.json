@@ -33,7 +33,13 @@
     "message": "Go to GitHub Org"
   },
   "oss.more.contact": {
-    "message": "sales@easydetek.com / +8615361626679"
+    "message": "sales@easydetek.com"
+  },
+  "oss.more.tel": {
+    "message": "Tel: 0755-27788421"
+  },
+  "oss.more.mobile": {
+    "message": "Mobile: +8615361626679"
   },
   "oss.recipe.title": {
     "message": "Reference Recipes"

@@ -13,4 +13,7 @@ Content is being prepared and will be published by release date. Each new produc
 
 ## Coming Soon
 
-For roadmap details or early evaluation samples, contact sales@easydetek.com / +8615361626679.
+For roadmap details or early evaluation samples, contact:<br />
+sales@easydetek.com<br />
+0755-27788421<br />
++8615361626679

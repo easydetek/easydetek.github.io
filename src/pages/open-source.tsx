@@ -193,9 +193,14 @@ export default function OpenSourcePage(): ReactNode {
             <Link
               className="button button--secondary button--lg"
               href="mailto:sales@easydetek.com">
-              <Translate id="oss.more.contact">sales@easydetek.com / +8615361626679</Translate>
+              <Translate id="oss.more.contact">sales@easydetek.com</Translate>
             </Link>
           </div>
+          <p className={styles.ctaContacts}>
+            <Translate id="oss.more.tel">电话：0755-27788421</Translate>
+            <br />
+            <Translate id="oss.more.mobile">手机：+8615361626679</Translate>
+          </p>
         </div>
       </main>
     </Layout>
