@@ -12,177 +12,269 @@
 -->
 <style>
   :root { --fg:#111827; --sub:#6b7280; --line:#e5e7eb; --bg:#f8fafc; --brand:#0b6bcb;
-          --ok:#15803d; --warn:#c2410c; --err:#dc2626; }
+          --ok:#15803d; --warn:#c2410c; --err:#dc2626;
+          /* 布局常量（唯一来源：整页不滚动靠这几个值撑住） */
+          --topbar-pad: 10px 16px 12px;
+          --gap: 12px;
+          --right-col: 372px;
+          --log-h: 200px;      /* 画布正下方日志面板默认高度 */
+          --log-h-min: 150px;
+          --radius: 12px; }
   * { box-sizing:border-box; }
-  body { margin:0; padding:20px 16px 56px; background:var(--bg); color:var(--fg); line-height:1.6;
-         font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif; }
-  .wrap { max-width:1500px; margin:0 auto; }
-  h1 { font-size:22px; margin:0 0 4px; }
-  .lead { color:var(--sub); font-size:13.5px; margin:0 0 16px; }
+  html, body { height:100%; }
+  body { margin:0; background:var(--bg); color:var(--fg); line-height:1.6;
+         font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+         overflow:hidden; }                 /* 桌面端整页不出现纵向滚动 */
+  h1 { font-size:17px; margin:0; line-height:1.35; }
   code { font-family:ui-monospace,Consolas,"Courier New",monospace; font-size:12.5px;
          background:#eef2f7; padding:1px 5px; border-radius:4px; }
 
-  /* 顶部状态条 */
-  .statusbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center;
-               background:#fff; border:1px solid var(--line); border-radius:12px;
-               padding:10px 14px; margin-bottom:12px; font-size:13px; }
+  /* ===================== 应用壳：顶栏 + 两列主区 ===================== */
+  .app { height:100vh; display:flex; flex-direction:column; min-height:0; }
+
+  .topbar { flex:none; background:#fff; border-bottom:1px solid var(--line);
+            padding:var(--topbar-pad); display:flex; flex-direction:column; gap:8px;
+            box-shadow:0 1px 3px rgba(16,24,40,.04); z-index:5; }
+  .tb-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; min-width:0; }
+  .tb-brand { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; min-width:0; }
+  .tb-sub { color:var(--sub); font-size:12px; min-width:0; }
+  .tb-sub b { color:#b45309; }
+  .tb-controls { row-gap:8px; }
+  .tb-controls .sep { width:1px; height:22px; background:var(--line); margin:0 2px; flex:none; }
+  .inline { display:inline-flex; align-items:center; gap:6px; font-size:13px; color:#374151;
+            white-space:nowrap; }
+  .inline input[type=number], .inline select { width:auto; min-width:74px; padding:5px 8px; }
+  .inline input[type=number] { width:82px; }
+
+  /* 状态条（顶栏第二行，吸顶不滚动） */
+  .statusbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; font-size:12.5px;
+               min-width:0; }
   .chip { display:inline-flex; align-items:center; gap:6px; color:var(--sub);
-          background:#f6f8fb; border:1px solid var(--line); border-radius:999px; padding:4px 12px; }
+          background:#f6f8fb; border:1px solid var(--line); border-radius:999px; padding:3px 11px;
+          white-space:nowrap; }
   .chip b { color:var(--fg); font-weight:600; }
   .dot { display:inline-block; width:9px; height:9px; border-radius:50%; background:#9ca3af; }
   .dot.on { background:var(--ok); box-shadow:0 0 0 3px rgba(21,128,61,.15); }
   .dot.sim { background:var(--brand); box-shadow:0 0 0 3px rgba(11,107,203,.15); }
   .dot.err { background:var(--err); }
 
-  /* 控制栏 */
-  .bar { display:flex; gap:10px; align-items:center; flex-wrap:wrap;
-         background:#fff; border:1px solid var(--line); border-radius:12px;
-         padding:12px 16px; margin-bottom:14px; }
-  button { font:inherit; font-size:14px; padding:8px 16px; border-radius:8px; border:1px solid transparent;
-           background:var(--brand); color:#fff; cursor:pointer; }
+  button { font:inherit; font-size:13.5px; padding:7px 14px; border-radius:8px;
+           border:1px solid transparent; background:var(--brand); color:#fff; cursor:pointer;
+           white-space:nowrap; }
   button:hover:not(:disabled) { filter:brightness(1.07); }
   button:disabled { background:#9ca3af; cursor:not-allowed; }
   button.ghost { background:#fff; color:var(--brand); border-color:var(--brand); }
   button.ghost:disabled { color:#9ca3af; border-color:#d1d5db; background:#fff; }
   button.danger { background:#fff; color:var(--err); border-color:#fca5a5; }
   button.danger:disabled { color:#9ca3af; border-color:#e5e7eb; }
-  button.small { font-size:12.5px; padding:5px 10px; }
-  .switch { display:inline-flex; align-items:center; gap:7px; font-size:14px;
-            background:#f6f8fb; border:1px solid var(--line); border-radius:8px; padding:8px 12px; }
-  .switch input { width:16px; height:16px; }
-  .bar .sep { width:1px; height:22px; background:var(--line); margin:0 2px; }
+  button.small { font-size:12px; padding:4px 10px; }
+  .switch { display:inline-flex; align-items:center; gap:7px; font-size:13.5px;
+            background:#f6f8fb; border:1px solid var(--line); border-radius:8px; padding:6px 11px;
+            white-space:nowrap; }
+  .switch input { width:15px; height:15px; margin:0; }
+  .switch.tiny { font-size:12px; padding:3px 8px; }
 
-  /* 主布局 */
-  .grid { display:grid; grid-template-columns:minmax(520px,1fr) 372px; gap:14px; align-items:start; }
-  @media (max-width:1180px) { .grid { grid-template-columns:1fr; } }
-  .panel { background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px;
-           margin-bottom:14px; }
-  .panel h2 { font-size:14px; margin:0 0 10px; color:#374151; letter-spacing:.3px; }
-  .canvas-panel { padding:10px; }
-  #plotWrap { position:relative; }
-  #plot { display:block; width:100%; border-radius:8px; background:#f7f9fc; }
-  .legend { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; font-size:12.5px; color:var(--sub); }
-  .legend .lg { display:inline-flex; align-items:center; gap:6px; }
-  .legend i { width:10px; height:10px; border-radius:3px; display:inline-block; }
+  /* 主区：两列，高度 = 100vh − 顶栏；各自滚动，互不挤压 */
+  .main { flex:1; min-height:0; display:grid; gap:var(--gap);
+          grid-template-columns:minmax(0,1fr) var(--right-col);
+          padding:var(--gap) 16px calc(var(--gap) + 2px); }
+  .col-left { min-width:0; min-height:0; display:flex; flex-direction:column; gap:var(--gap); }
+  .col-right { min-height:0; overflow-y:auto; overflow-x:hidden; padding-right:4px;
+               display:flex; flex-direction:column; gap:var(--gap);
+               scrollbar-gutter:stable; }
+  /* 列内间距统一由 gap 负责，面板不再自带 margin，避免左列画布与日志之间出现双倍间距 */
+  .col-left > .panel, .col-right > .panel { margin-bottom:0; }
 
-  /* 表单 */
-  .row { display:grid; grid-template-columns:118px 1fr; gap:8px; align-items:center; margin-bottom:8px; font-size:13px; }
-  .row label { color:#374151; }
-  input[type=number], select { font:inherit; font-size:13px; padding:6px 8px; width:100%;
-      border:1px solid #cbd5e1; border-radius:7px; background:#fff; }
-  input[type=number]:disabled, select:disabled { background:#f3f4f6; color:#9ca3af; }
-  .hint { font-size:12px; color:var(--sub); margin:2px 0 10px; }
-  .btnrow { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+  .panel { background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+           padding:12px 14px; margin-bottom:var(--gap); }
+  .panel:last-child { margin-bottom:0; }
+  .panel h2 { font-size:13px; margin:0 0 8px; color:#374151; letter-spacing:.3px; }
 
-  /* 设备回报 & 目标表 */
-  table { width:100%; border-collapse:collapse; font-size:12.5px; }
-  th, td { text-align:left; padding:4px 6px; border-bottom:1px solid #f0f3f7; }
-  th { color:var(--sub); font-weight:500; }
-  td.num { font-variant-numeric:tabular-nums; }
-  .kv { display:grid; grid-template-columns:96px 1fr; gap:4px 8px; font-size:12.5px; }
-  .kv .k { color:var(--sub); }
-  .kv .v { color:var(--fg); word-break:break-all; }
-  .empty { color:#9ca3af; font-size:12.5px; }
+  /* 左列：画布占满剩余空间（不再用固定像素高度） */
+  .canvas-panel { flex:1; min-height:0; padding:8px; display:flex; }
+  #plotWrap { position:relative; flex:1; min-height:0; min-width:0; }
+  #plot { position:absolute; inset:0; display:block; border-radius:8px; background:#f7f9fc;
+          width:100%; height:100%; }
+  /* 图例：叠在画布右上角（不占布局高度，也不遮挡底部的 X 轴刻度与右下 HUD） */
+  .legend { position:absolute; right:8px; top:8px; max-width:44%; display:flex; gap:4px 10px;
+            flex-direction:column; align-items:flex-end; font-size:11.5px; color:#475569;
+            pointer-events:none; background:rgba(255,255,255,.88); border:1px solid var(--line);
+            border-radius:8px; padding:4px 8px; }
+  .legend .lg { display:inline-flex; align-items:center; gap:5px; }
+  .legend i { width:9px; height:9px; border-radius:3px; display:inline-block; }
 
-  /* 日志 */
-  details.log summary { cursor:pointer; font-size:14px; color:#374151; font-weight:600; }
-  .logbox { margin-top:10px; height:260px; overflow:auto; background:#0f172a; color:#cbd5e1;
-            border-radius:10px; padding:10px 12px; font-family:ui-monospace,Consolas,monospace;
-            font-size:12px; line-height:1.55; white-space:pre-wrap; word-break:break-all; }
+  /* 左列：画布正下方的日志面板（高度受限、内部滚动、可折叠） */
+  .logpanel { flex:none; height:var(--log-h); min-height:var(--log-h-min);
+              display:flex; flex-direction:column; padding:8px 10px 10px; }
+  .logpanel.collapsed { height:42px; min-height:42px; }
+  .logpanel.collapsed .logbox { display:none; }
+  .loghead { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px;
+             font-size:13px; color:#374151; }
+  .loghead b { font-weight:600; }
+  .logsub { color:var(--sub); font-size:12px; }
+  .loghead .grow { flex:1; min-width:8px; }
+  .logbox { flex:1; min-height:0; overflow:auto; background:#0f172a; color:#cbd5e1;
+            border-radius:10px; padding:8px 10px; font-family:ui-monospace,Consolas,monospace;
+            font-size:12px; line-height:1.5; white-space:pre-wrap; word-break:break-all; }
   .logbox .t { color:#64748b; }
   .logbox .rx { color:#7dd3fc; }
   .logbox .tx { color:#fcd34d; }
   .logbox .bx { color:#fca5a5; }
   .logbox .ok { color:#86efac; }
-  .self { font-family:ui-monospace,Consolas,monospace; font-size:12px; white-space:pre-wrap;
-          background:#f6f8fb; border:1px solid var(--line); border-radius:8px; padding:10px; margin-top:8px; }
+
+  /* 表单 */
+  .row { display:grid; grid-template-columns:110px 1fr; gap:8px; align-items:center;
+         margin-bottom:7px; font-size:13px; }
+  .row label { color:#374151; }
+  .row input[type=number], .row select { width:100%; }
+  input[type=number], select { font:inherit; font-size:13px; padding:5px 8px;
+      border:1px solid #cbd5e1; border-radius:7px; background:#fff; }
+  input[type=number]:disabled, select:disabled { background:#f3f4f6; color:#9ca3af; }
+  .hint { font-size:11.5px; color:var(--sub); margin:2px 0 8px; line-height:1.5; }
+  .btnrow { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; align-items:center; }
+
+  /* 设备回报 & 目标表 */
+  table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  th, td { text-align:left; padding:3px 6px; border-bottom:1px solid #f0f3f7; }
+  th { color:var(--sub); font-weight:500; }
+  td.num { font-variant-numeric:tabular-nums; }
+  .kv { display:grid; grid-template-columns:92px 1fr; gap:3px 8px; font-size:12.5px; }
+  .kv .k { color:var(--sub); }
+  .kv .v { color:var(--fg); word-break:break-all; }
+  .empty { color:#9ca3af; font-size:12.5px; }
+
+  .self { font-family:ui-monospace,Consolas,monospace; font-size:11.5px; white-space:pre-wrap;
+          background:#f6f8fb; border:1px solid var(--line); border-radius:8px; padding:8px;
+          margin-top:8px; max-height:180px; overflow:auto; }
   .pass { color:var(--ok); font-weight:700; }
   .fail { color:var(--err); font-weight:700; }
   .note { background:#fff; border:1px solid var(--line); border-left:4px solid var(--brand);
-          border-radius:10px; padding:12px 16px; margin-bottom:14px; font-size:13px; color:#374151; }
+          border-radius:10px; padding:8px 12px; font-size:12.5px; color:#374151; }
   .note b { color:var(--fg); }
   .warnline { background:#fff7ed; border:1px solid #fed7aa; border-left:4px solid #f97316;
-              border-radius:8px; padding:8px 12px; margin:0 0 10px; font-size:12.5px; color:#9a3412; }
+              border-radius:8px; padding:7px 11px; margin:0 0 8px; font-size:12px; color:#9a3412; }
   .readback { background:#f6f8fb; border:1px solid var(--line); border-radius:8px;
-              padding:8px 12px; margin-bottom:8px; font-size:12.5px; color:#374151;
+              padding:7px 11px; margin-bottom:8px; font-size:12px; color:#374151;
               font-variant-numeric:tabular-nums; }
-  .seq { font-family:ui-monospace,Consolas,monospace; font-size:11.5px; white-space:pre-wrap;
-         background:#0f172a; color:#cbd5e1; border-radius:8px; padding:8px 10px; margin-top:8px;
-         max-height:170px; overflow:auto; }
+  .seq { font-family:ui-monospace,Consolas,monospace; font-size:11px; white-space:pre-wrap;
+         background:#0f172a; color:#cbd5e1; border-radius:8px; padding:7px 9px; margin-top:8px;
+         max-height:150px; overflow:auto; }
   .seq .ok { color:#86efac; }
   .seq .err { color:#fca5a5; }
   .seq .wait { color:#fcd34d; }
+  .foot { color:var(--sub); font-size:11.5px; margin:2px 0 6px; line-height:1.5; }
+
+  /* 矮屏（如 1280×720）把日志压一点、隐藏顶栏那行说明，保证画布仍有可用高度 */
+  @media (max-height: 800px) {
+    :root { --log-h: 168px; --log-h-min: 132px; }
+    .panel { padding:10px 12px; }
+    h1 { font-size:15px; }
+    .tb-sub { display:none; }
+    .tb-row { gap:6px; }
+    button { padding:6px 12px; font-size:13px; }
+    .switch { padding:5px 9px; font-size:13px; }
+  }
+
+  /* 窄屏（<1100px）退化为单列堆叠，允许主区自身滚动 */
+  @media (max-width: 1100px) {
+    body { overflow:auto; }
+    .app { height:auto; min-height:100vh; }
+    .main { grid-template-columns:1fr; overflow:visible; }
+    .col-left { min-height:0; }
+    .canvas-panel { height:56vh; flex:none; }
+    .logpanel { height:200px; min-height:200px; }
+    .col-right { overflow:visible; }
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>EDV11P 目标轨迹查看 · 网页版</h1>
-  <p class="lead">
-    EDK60_VA 桥接器（ESP32-C6，原生 USB CDC）+ EDV11P 雷达 · 921600 8N1 无流控 · 浏览器 <b>Web Serial</b> 直连，
-    无需安装上位机。显示口径（侧装方案 A）：x[-500,500] / y[0,800] / 挂高 200cm / z 为离地高度。<br>
-    <b>本页默认只读</b>：连接后仅发送查询（GET），不改写模组配置；改写需手动确认。
-    页面只呈现 0x70 目标上报的内容，模组型号分支（-02 人数统计 / -03 跌倒）尚未定版，
-    <b>功能与参数一律以设备回读为准</b>。
-  </p>
+<div class="app">
 
-  <!-- ===== 顶部状态条 ===== -->
-  <div class="statusbar" id="statusbar">
-    <span class="chip"><span class="dot" id="st-dot"></span><b id="st-conn">未连接</b></span>
-    <span class="chip">串口 <b id="st-port">—</b></span>
-    <span class="chip">帧率 <b id="st-fps">0.0</b> 帧/秒</span>
-    <span class="chip">坏帧 <b id="st-bad">0</b></span>
-    <span class="chip" title="本帧 0x70 上报的目标个数">当前目标 <b id="st-count">0</b></span>
-    <span class="chip" title="自连接以来出现过的目标 ID 个数">累计出现 <b id="st-total">0</b></span>
-    <span class="chip">最后上报 <b id="st-last">—</b></span>
-    <span class="chip">收字节 <b id="st-rx">0</b></span>
-  </div>
+  <!-- ================= 顶栏（吸顶，不随内容滚动） ================= -->
+  <header class="topbar">
+    <div class="tb-row tb-brand">
+      <h1>EDV11P 目标轨迹查看 · 网页版</h1>
+      <span class="tb-sub">
+        EDK60_VA 桥接器 + EDV11P 雷达 · 921600 8N1 · <b>默认只读</b>：连接仅发查询，写入需手动确认 ·
+        模组型号分支（-02 人数统计 / -03 跌倒）未定版，功能与参数以设备回读为准
+      </span>
+    </div>
 
-  <!-- ===== 控制栏 ===== -->
-  <div class="bar">
-    <button id="btn-connect">连接串口</button>
-    <button id="btn-disconnect" class="ghost" disabled>断开</button>
-    <span class="sep"></span>
-    <label class="switch" title="用合成轨迹驱动同一套解析与渲染管线，勾选后不访问串口">
-      <input type="checkbox" id="chk-sim"> 模拟演示（无需硬件）
-    </label>
-    <span class="sep"></span>
-    <button id="btn-clear" class="ghost">清空轨迹</button>
-    <button id="btn-selftest" class="ghost">运行帧解析自测</button>
-  </div>
+    <div class="tb-row statusbar" id="statusbar">
+      <span class="chip"><span class="dot" id="st-dot"></span><b id="st-conn">未连接</b></span>
+      <span class="chip">串口 <b id="st-port">—</b></span>
+      <span class="chip">帧率 <b id="st-fps">0.0</b> 帧/秒</span>
+      <span class="chip">坏帧 <b id="st-bad">0</b></span>
+      <span class="chip" title="本帧 0x70 上报的目标个数">当前目标 <b id="st-count">0</b></span>
+      <span class="chip" title="自连接以来出现过的目标 ID 个数">累计出现 <b id="st-total">0</b></span>
+      <span class="chip">最后上报 <b id="st-last">—</b></span>
+      <span class="chip">收字节 <b id="st-rx">0</b></span>
+    </div>
 
-  <div class="note" id="envNote" hidden></div>
+    <div class="tb-row tb-controls">
+      <button id="btn-connect">连接串口</button>
+      <button id="btn-disconnect" class="ghost" disabled>断开</button>
+      <label class="switch" title="用合成轨迹驱动同一套解析与渲染管线，勾选后不访问串口">
+        <input type="checkbox" id="chk-sim"> 模拟演示（无需硬件）
+      </label>
+      <button id="btn-clear" class="ghost">清空轨迹</button>
+      <button id="btn-selftest" class="ghost">运行帧解析自测</button>
 
-  <div class="grid">
-    <!-- ===== 画布 ===== -->
-    <section class="panel canvas-panel">
-      <div id="plotWrap"><canvas id="plot" width="900" height="720" role="img"
-        aria-label="EDV11P 目标俯视轨迹图：横轴 X（厘米），纵轴 Y（厘米），每个目标一个颜色与轨迹"></canvas></div>
-      <div class="legend" id="legend"><span class="empty">等待目标数据…</span></div>
+      <span class="sep"></span>
+
+      <label class="inline" for="sel-install">安装方式
+        <select id="sel-install">
+          <option value="tilted" selected>侧装 60°（方案 A）</option>
+          <option value="ceiling">朝下安装</option>
+        </select>
+      </label>
+      <label class="inline" for="inp-view">显示范围
+        <input type="number" id="inp-view" min="100" max="3000" step="50" value="800"> cm
+      </label>
+      <label class="inline" for="inp-mount">挂高
+        <input type="number" id="inp-mount" min="0" max="400" step="1" value="200"> cm
+      </label>
+      <label class="inline" for="inp-history">轨迹点数
+        <input type="number" id="inp-history" min="10" max="1000" step="10" value="50">
+      </label>
+
+      <span class="sep"></span>
+      <button class="small ghost" id="btn-logtoggle">收起日志</button>
+    </div>
+
+    <div class="note" id="envNote" hidden></div>
+  </header>
+
+  <!-- ================= 主区：左列（画布 + 日志）/ 右列（配置，独立滚动） ================= -->
+  <main class="main">
+
+    <section class="col-left">
+      <!-- 画布：flex:1，随容器尺寸自适应 -->
+      <section class="panel canvas-panel">
+        <div id="plotWrap">
+          <canvas id="plot" width="900" height="720" role="img"
+            aria-label="EDV11P 目标俯视轨迹图：横轴 X（厘米），纵轴 Y（厘米），每个目标一个颜色与轨迹"></canvas>
+          <div class="legend" id="legend"><span class="empty">等待目标数据…</span></div>
+        </div>
+      </section>
+
+      <!-- 画布正下方的日志：高度受限、内部滚动、可折叠 -->
+      <section class="panel logpanel" id="logPanel">
+        <div class="loghead">
+          <b>原始帧日志</b><span class="logsub">（十六进制 + 解析结果）</span>
+          <span class="grow"></span>
+          <label class="switch tiny"><input type="checkbox" id="chk-logpause"> 暂停</label>
+          <button class="small ghost" id="btn-logclear">清空</button>
+          <button class="small ghost" id="btn-logmock">写入一条 0x70 样例帧</button>
+        </div>
+        <div class="logbox" id="logbox"></div>
+      </section>
     </section>
 
-    <aside>
-      <!-- ===== 几何与显示参数（所有魔法数字集中在此 + 顶栏配置区） ===== -->
+    <aside class="col-right" id="colRight">
+      <!-- ===== 设备参数（写入时的目标值） ===== -->
       <section class="panel">
-        <h2>几何 / 显示参数</h2>
-        <div class="row">
-          <label for="sel-install">安装方式</label>
-          <select id="sel-install">
-            <option value="tilted" selected>侧装 60°（方案 A）</option>
-            <option value="ceiling">朝下安装</option>
-          </select>
-        </div>
-        <div class="row">
-          <label for="inp-mount">挂高 (cm)</label>
-          <input type="number" id="inp-mount" min="0" max="400" step="1" value="200">
-        </div>
-        <div class="row">
-          <label for="inp-view">显示范围 (cm)</label>
-          <input type="number" id="inp-view" min="100" max="3000" step="50" value="800">
-        </div>
-        <div class="row">
-          <label for="inp-history">轨迹点数</label>
-          <input type="number" id="inp-history" min="10" max="1000" step="10" value="50">
-        </div>
+        <h2>目标配置值（写入用）</h2>
         <div class="row">
           <label for="sel-work">工作模式</label>
           <select id="sel-work">
@@ -198,17 +290,15 @@
         </div>
         <p class="hint" id="hint-freq">协议单位为 50ms（.py 第 1562/1994/2581 行；协议文档第 73 行、
           第 164-169 行示例「100ms」下发的值是 2）。当前 = 100ms。</p>
-        <p class="hint" id="hint-bounds">显示范围换算：x[-500, 500] cm、y[0, 800] cm（视图范围 × 5/8 与 × 1）。</p>
-        <p class="hint">上面这几个输入框只用于<b>本地显示口径</b>与<b>写入时的目标值</b>；
-          设备实际的当前值请看下方「设备回报」，本页不替设备做任何推断。
-          工作模式枚举含义（0 调试 / 1 追踪·人数统计 / 2 体征 / 3 跌倒）来自协议文档，
-          本模组实际支持哪种分支未定版。</p>
         <div class="btnrow">
           <span class="hint" style="margin:0 4px 0 0">快捷周期</span>
           <button class="small ghost" data-freq="2">100ms（2）</button>
           <button class="small ghost" data-freq="4">200ms（4）</button>
           <button class="small ghost" data-freq="10">500ms（10）</button>
         </div>
+        <p class="hint" id="hint-bounds">显示范围换算：x[-500, 500] cm、y[0, 800] cm（视图范围 × 5/8 与 × 1）。</p>
+        <p class="hint">上面的输入只用于<b>写入时的目标值</b>与本地显示口径；设备实际当前值见下方「设备回报」，
+          本页不替设备做推断。工作模式枚举含义来自协议文档，本模组实际支持哪种分支未定版。</p>
       </section>
 
       <!-- ===== 写入配置（默认只读，需显式确认） ===== -->
@@ -252,24 +342,12 @@
         </div>
         <div class="self" id="selftestOut" hidden></div>
       </section>
+
+      <p class="foot">
+        离线单文件，无外部依赖，不写 localStorage。Web Serial 需 Chrome / Edge 89+（https 或 localhost，file:// 通常亦可）。
+      </p>
     </aside>
-  </div>
-
-  <!-- ===== 原始帧日志 ===== -->
-  <details class="panel" id="logDetails">
-    <summary>原始帧日志（十六进制 + 解析结果）</summary>
-    <div class="btnrow" style="margin-top:10px">
-      <label class="switch"><input type="checkbox" id="chk-logpause"> 暂停刷新</label>
-      <button class="small ghost" id="btn-logclear">清空日志</button>
-      <button class="small ghost" id="btn-logmock">写入一条 0x70 样例帧</button>
-    </div>
-    <div class="logbox" id="logbox"></div>
-  </details>
-
-  <p class="lead" style="margin-top:16px">
-    离线单文件，无外部依赖。Web Serial 需 Chrome / Edge 89+；请在 https 或 localhost 下打开（file:// 亦可，
-    若浏览器提示不可用请用本地静态服务）。本页不写入 localStorage，不采集任何数据。
-  </p>
+  </main>
 </div>
 
 <script>
@@ -933,21 +1011,20 @@ function currentBounds() {
   return projectionBounds(state.viewRange, state.install === 'tilted');
 }
 
-/** 画布尺寸随容器宽度与坐标范围自适应（保持世界坐标等比，不拉伸） */
+/**
+ * 画布尺寸 = 容器实际尺寸（应用壳里由 flex 决定，不再用固定像素高度或 innerHeight 比例）。
+ * #plotWrap 是 position:relative + flex:1，canvas 用 position:absolute;inset:0 填满它，
+ * 所以这里只读 getBoundingClientRect()，ResizeObserver 变化时回调本函数。
+ */
 function fitCanvas() {
-  const b = currentBounds();
+  const rect = plotWrap.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
-  const availW = Math.max(320, Math.floor(plotWrap.getBoundingClientRect().width || 900));
-  const worldW = b.x1 - b.x0;
-  const worldH = b.y1 - b.y0;
-  const cssW = availW;
-  let cssH = Math.round(cssW * (worldH / worldW) * 1.04);
-  const maxH = Math.max(360, Math.round(window.innerHeight * 0.66));
-  cssH = Math.min(Math.max(cssH, 300), maxH);
-  canvas.style.width = cssW + 'px';
-  canvas.style.height = cssH + 'px';
+  const cssW = Math.max(240, Math.floor(rect.width));
+  const cssH = Math.max(200, Math.floor(rect.height));
   canvas.width = Math.round(cssW * dpr);
   canvas.height = Math.round(cssH * dpr);
+  canvas.style.width = cssW + 'px';
+  canvas.style.height = cssH + 'px';
   state.canvasSize = { w: cssW, h: cssH, dpr };
   drawScene(performance.now());
 }
@@ -961,7 +1038,13 @@ function drawScene(now) {
 
   const b = currentBounds();
   const tilted = state.install === 'tilted';
-  const pad = { l: 62, r: 132, t: 30, b: 54 };
+  /* 边距随画布尺寸自适应（应用壳里画布会随窗口宽度/高度变化，固定的 62/132 在矮画布上会吃掉太多空间） */
+  const pad = {
+    l: Math.max(34, Math.min(62, Math.round(W * 0.075))),
+    r: Math.max(48, Math.min(132, Math.round(W * 0.15))),
+    t: Math.max(22, Math.min(30, Math.round(H * 0.05))),
+    b: Math.max(30, Math.min(54, Math.round(H * 0.09)))
+  };
   const availW = Math.max(80, W - pad.l - pad.r);
   const availH = Math.max(80, H - pad.t - pad.b);
   const scale = Math.min(availW / (b.x1 - b.x0), availH / (b.y1 - b.y0));
@@ -2011,6 +2094,7 @@ function refreshFreqHint() {
 function bindUI() {
   $('btn-connect').addEventListener('click', connectSerial);
   $('btn-disconnect').addEventListener('click', disconnectSerial);
+  $('btn-logtoggle').addEventListener('click', () => toggleLogPanel());
   $('btn-clear').addEventListener('click', () => {
     state.current.clear(); state.history.clear(); state.retired.length = 0; state.seen.clear();
     logLine('ok', '轨迹与累计计数已清空');
@@ -2073,8 +2157,23 @@ function bindUI() {
 
   window.addEventListener('resize', () => fitCanvas());
   if (typeof ResizeObserver !== 'undefined') {
+    /* 画布随左列/窗口尺寸变化自适应：观察容器而非窗口，折叠日志、拖动窗口都能即时跟上 */
     new ResizeObserver(() => fitCanvas()).observe(plotWrap);
+    new ResizeObserver(() => fitCanvas()).observe($('logPanel'));
   }
+}
+
+/** 折叠 / 展开「原始帧日志」面板（默认展开；折叠后画布变高，日志不压画布） */
+function toggleLogPanel(forceExpanded) {
+  const panel = $('logPanel');
+  const collapsed = (typeof forceExpanded === 'boolean')
+    ? !forceExpanded
+    : !panel.classList.contains('collapsed');
+  if (collapsed) panel.classList.add('collapsed');
+  else panel.classList.remove('collapsed');
+  const btn = $('btn-logtoggle');
+  if (btn) btn.textContent = collapsed ? '展开日志' : '收起日志';
+  fitCanvas();
 }
 
 function boot() {
