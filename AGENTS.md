@@ -18,7 +18,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\push-both.ps1
 git push origin main ; git push gitee main
 ```
 
-- `.github/workflows/sync-to-gitee.yml` 的自动同步**长期不可靠**（多次 failure），**不要依赖它**；以手动双推为准。
+- 曾经有一个 `.github/workflows/sync-to-gitee.yml` 做自动同步，但它长期 failure，已于 2026-10 删除；**现在唯一的同步方式就是手动双推**。
 - 只推了 GitHub 会导致 Gitee 静默落后，服务器 `git pull` 报 "Already up to date" 却拿不到新内容（2026-10-22 已踩过一次）。
 
 ## 2. versioned 快照必须同步

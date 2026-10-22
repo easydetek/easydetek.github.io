@@ -274,7 +274,7 @@ git push origin main
 git push gitee main
 ```
 
-- `.github/workflows/sync-to-gitee.yml` 的自动同步**长期失败，不要依赖**；以手动双推为准。
+- 曾经的自动同步 workflow（`sync-to-gitee.yml`）长期失败，已于 2026-10 删除；**同步只能靠手动双推**。
 - 只推 GitHub 会让 Gitee 静默落后，服务器 `git pull` 会报 "Already up to date" 却拿不到新内容。
 - 推完 **不等于** 线上更新：`easydetek.github.io` 等 Actions（2–4 分钟），`docs.easydetek.com` 需在服务器手动 `git pull origin main && docker compose up -d --build`。
 
