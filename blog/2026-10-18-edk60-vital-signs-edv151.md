@@ -150,7 +150,7 @@ vital_signs <睡眠状态>,<距离cm>,<体动>,<心率bpm>,<呼吸率bpm>,
 
 | 内容 | 入口 |
 |---|---|
-| 零基础烧录（无需装任何软件） | [新手烧录指南](/opensource/开源硬件/EDK60/flash-guide) |
+| 零基础烧录（无需装任何软件） | [生命体征检测实施指南](/opensource/开源硬件/EDK60/flash-guide) |
 | 网页版实时数据显示 | [实时数据显示页面](pathname:///edk60/monitor.html) |
 | 固件与工具下载 | [EDK60 附件与资料](/opensource/开源硬件/EDK60/attachments) |
 | 开发板硬件介绍 | [EDK60 开发板](/opensource/开源硬件/EDK60/) |

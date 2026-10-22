@@ -14,7 +14,7 @@ sidebar_position: 2
 ## 固件
 
 - **[edk60_edv151_vital.bin](pathname:///edk60/edk60_edv151_vital.bin)** —— EDV151 体征雷达示例固件
-  （**合并固件，烧录地址 `0x0`**；烧录方法见[新手烧录指南（EDK60 + EDV151）](./flash-guide.md)）
+  （**合并固件，烧录地址 `0x0`**；烧录方法见[生命体征检测实施指南（EDK60 + EDV151）](./flash-guide.md)）
 - 网页一键烧录（EDV151 生命体征固件）：[⚡ 烧录页面](pathname:///edk60/flash.html)
 - 网页实时显示（EDV151）：[📊 数据显示页面](pathname:///edk60/monitor.html)
 
@@ -33,7 +33,7 @@ sidebar_position: 2
 ## 相关文档
 
 - [EDK60 开发板概览](./index.md)
-- [新手烧录指南（EDK60 + EDV151）](./flash-guide.md)
+- [生命体征检测实施指南（EDK60 + EDV151）](./flash-guide.md)
 - [应用案例：EDK60 + EDV151 呼吸心率监测方案](/blog/edk60-vital-signs-edv151)
 
 ## 其他资料

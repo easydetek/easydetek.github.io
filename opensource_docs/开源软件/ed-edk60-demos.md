@@ -100,7 +100,7 @@ C6 的 USB Serial/JTAG 只有一个外设。若把控制台日志也接到 USB�
 
 站内配套文档：
 
-- [新手烧录指南（EDK60 + EDV151）](/opensource/开源硬件/EDK60/flash-guide)：零基础、免安装，网页一键烧录体征固件
+- [生命体征检测实施指南（EDK60 + EDV151）](/opensource/开源硬件/EDK60/flash-guide)：零基础、免安装，网页一键烧录体征固件
 - [人数统计雷达实施指南（EDV11P 侧装）](/opensource/开源硬件/EDK60/track-guide)：接线 → 烧录 → 看到轨迹的完整配方
 
 ## 仓库里的关键文档
@@ -110,7 +110,7 @@ C6 的 USB Serial/JTAG 只有一个外设。若把控制台日志也接到 USB�
 | `docs/EDK60-pinmap.md` | 引脚定义表（含实测结论）、雷达电源控制、电源树、待实测确认项 —— **写代码前必读** |
 | `docs/EDK60-pitfalls.md` | 开发避坑清单 + 排障速查表 |
 | `docs/vscode-setup.md` | VS Code + ESP-IDF 插件使用说明 |
-| `docs/flash-guide-for-beginner.md` | 新手烧录指南（与本站[新手烧录指南](/opensource/开源硬件/EDK60/flash-guide)同源） |
+| `docs/flash-guide-for-beginner.md` | 新手烧录指南（与本站[生命体征检测实施指南](/opensource/开源硬件/EDK60/flash-guide)同源） |
 | `docs/tutorial-edv151-vital-signs.md` | EDV151 体征雷达打通全过程（开发者教程） |
 | `docs/recipe-edv11p-person-tracking.md` | EDV11P 侧装人数统计实施指南 |
 | `docs/case-edv11p-person-tracking.md` | EDV11P 应用案例（含 30 分钟实测数据与轨迹图） |

@@ -68,7 +68,7 @@ const recipes: Recipe[] = [
     links: [
       {label: '查看完整案例', to: '/blog/edk60-vital-signs-edv151'},
       {
-        label: '新手烧录指南',
+        label: '生命体征检测实施指南',
         to: '/opensource/%E5%BC%80%E6%BA%90%E7%A1%AC%E4%BB%B6/EDK60/flash-guide',
       },
       {label: '网页烧录工具（EDV151 固件）', to: 'pathname:///edk60/flash.html'},
