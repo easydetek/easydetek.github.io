@@ -15,7 +15,7 @@ EDK60 面向需要快速验证 EasyDetek 雷达方案的工程师与集成商：
 
 ## 示例工程
 
-- **[EDK60 多工程 Demo（ed_edk60_demos）](/opensource/开源软件/ed-edk60-demos)** —— **18 个** ESP-IDF demo（含 EDV11P 人数统计、EDV163 水位监测两套雷达桥）
+- **[EDK60 多工程 Demo（ed_edk60_demos）](/opensource/开源软件/ed-edk60-demos)** —— **19 个** ESP-IDF demo（含 EDV11P 人数统计、EDV163 水位监测、EDV163 挥手识别三套雷达桥）
   （GPIO / UART / ADC / Wi-Fi / BLE / 低功耗 / 雷达透传），一套工程用 menuconfig 单选编译，
   含板级支持包、引脚表与避坑清单；源码仓库
   [easydetek/ed_edk60_demos](https://github.com/easydetek/ed_edk60_demos)
@@ -28,6 +28,7 @@ EDK60 面向需要快速验证 EasyDetek 雷达方案的工程师与集成商：
   单模组覆盖一片区域，实时输出最多 6 个目标的坐标与人数，30 分钟实测帧完整率 100%
 - **[EDK60 + EDV163 水位监测方案](/blog/edk60-edv163-water-level)** —— 吊装向下测距，
   水位 = 挂高 − 距离；含协议要点与转义处理（**待实机验证**）
+- **[EDK60 + EDV163 挥手识别方案](/blog/edk60-edv163-gesture)** —— 文本行协议 + 点云混流，非接触挥手方向与距离触发（**待实机验证**）
 
 ## 快速上手
 
@@ -36,6 +37,7 @@ EDK60 面向需要快速验证 EasyDetek 雷达方案的工程师与集成商：
 - **[人数统计雷达实施指南（EDV11P 侧装）](./track-guide)** —— 接线 → 烧录 → 看到轨迹的完整配方，
   含安装几何、参数表、验证清单与故障排查
 - **[水位监测实施指南（EDV163）](./level-guide)** —— 接线 → 烧录 → 读水位曲线的完整配方（待实机验证）
+- **[挥手识别实施指南（EDV163）](./gesture-guide)** —— 接线 → 烧录 → 看挥手方向（待实机验证）
 
 ## 在线工具
 
@@ -55,6 +57,11 @@ EDK60 面向需要快速验证 EasyDetek 雷达方案的工程师与集成商：
 
 - [**网页烧录 · 水位监测固件**](pathname:///edk60/edv163/flash.html) —— 插 USB 即可烧录，无需 ESP-IDF（固件尚未实机验证）
 - [**网页水位演示**](pathname:///edk60/edv163/level.html) —— 连上板子就能看到实时水位曲线；默认只读，需手动确认才会写入雷达配置
+
+**挥手识别固件（EDK60 + EDV163）**
+
+- [**网页烧录 · 挥手识别固件**](pathname:///edk60/edv163-gesture/flash.html) —— 插 USB 即可烧录，无需 ESP-IDF（固件尚未实机验证）
+- [**网页挥手识别演示**](pathname:///edk60/edv163-gesture/gesture.html) —— 连上板子就能看到挥手方向与距离；全链路只读，设备无命令接口
 
 ## 资料下载
 

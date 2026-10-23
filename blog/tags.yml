@@ -41,3 +41,8 @@ level:
   label: 水位监测
   permalink: /case/level
   description: 非接触水位、液位与料位监测等测距应用案例
+
+gesture:
+  label: 挥手识别
+  permalink: /case/gesture
+  description: 非接触手势/挥手识别等交互类应用案例
