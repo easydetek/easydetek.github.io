@@ -60,7 +60,7 @@ EDK60 面向需要快速验证 EasyDetek 雷达方案的工程师与集成商：
 
 **挥手识别固件（EDK60 + EDV163）**
 
-- [**网页烧录 · 挥手识别固件**](pathname:///edk60/edv163-gesture/flash.html) —— 插 USB 即可烧录，无需 ESP-IDF（固件尚未实机验证）
+- [**网页烧录 · 挥手识别固件**](pathname:///edk60/edv163-gesture/flash.html) —— 插 USB 即可烧录，无需 ESP-IDF（固件**已实机验证**，v1.0.0）
 - [**网页挥手识别演示**](pathname:///edk60/edv163-gesture/gesture.html) —— 连上板子就能看到挥手方向与距离；全链路只读，设备无命令接口
 
 ## 资料下载
