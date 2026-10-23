@@ -15,7 +15,7 @@ EDK60 面向需要快速验证 EasyDetek 雷达方案的工程师与集成商：
 
 ## 示例工程
 
-- **[EDK60 多工程 Demo（ed_edk60_demos）](/opensource/开源软件/ed-edk60-demos)** —— 17 个 ESP-IDF demo
+- **[EDK60 多工程 Demo（ed_edk60_demos）](/opensource/开源软件/ed-edk60-demos)** —— **18 个** ESP-IDF demo（含 EDV11P 人数统计、EDV163 水位监测两套雷达桥）
   （GPIO / UART / ADC / Wi-Fi / BLE / 低功耗 / 雷达透传），一套工程用 menuconfig 单选编译，
   含板级支持包、引脚表与避坑清单；源码仓库
   [easydetek/ed_edk60_demos](https://github.com/easydetek/ed_edk60_demos)
@@ -26,6 +26,8 @@ EDK60 面向需要快速验证 EasyDetek 雷达方案的工程师与集成商：
   非接触测量呼吸与心率并实时上报 PC，含实测数据、串口协议与关键调参经验
 - **[EDK60 + EDV11P 侧装人数统计与轨迹跟踪](/blog/edk60-edv11p-person-tracking)** —— 墙角侧装 60°，
   单模组覆盖一片区域，实时输出最多 6 个目标的坐标与人数，30 分钟实测帧完整率 100%
+- **[EDK60 + EDV163 水位监测方案](/blog/edk60-edv163-water-level)** —— 吊装向下测距，
+  水位 = 挂高 − 距离；含协议要点与转义处理（**待实机验证**）
 
 ## 快速上手
 
@@ -33,6 +35,7 @@ EDK60 面向需要快速验证 EasyDetek 雷达方案的工程师与集成商：
   插上 EDV151 雷达坐稳 20~40 秒就能看到心率 / 呼吸率
 - **[人数统计雷达实施指南（EDV11P 侧装）](./track-guide)** —— 接线 → 烧录 → 看到轨迹的完整配方，
   含安装几何、参数表、验证清单与故障排查
+- **[水位监测实施指南（EDV163）](./level-guide)** —— 接线 → 烧录 → 读水位曲线的完整配方（待实机验证）
 
 ## 在线工具
 
@@ -47,6 +50,11 @@ EDK60 面向需要快速验证 EasyDetek 雷达方案的工程师与集成商：
 
 - [**网页烧录 · 人数统计固件**](pathname:///edk60/edv11p/flash.html) —— 插 USB 即可烧录，无需 ESP-IDF
 - [**网页实时轨迹演示**](pathname:///edk60/edv11p/track.html) —— 连上板子就能看到目标轨迹与人数；默认只读，需手动确认才会写入雷达配置
+
+**水位监测固件（EDK60 + EDV163）**
+
+- [**网页烧录 · 水位监测固件**](pathname:///edk60/edv163/flash.html) —— 插 USB 即可烧录，无需 ESP-IDF（固件尚未实机验证）
+- [**网页水位演示**](pathname:///edk60/edv163/level.html) —— 连上板子就能看到实时水位曲线；默认只读，需手动确认才会写入雷达配置
 
 ## 资料下载
 

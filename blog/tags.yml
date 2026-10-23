@@ -36,3 +36,8 @@ tracking:
   label: 人数统计与轨迹
   permalink: /case/tracking
   description: 人数统计、目标定位与轨迹跟踪等人员感知应用案例
+
+level:
+  label: 水位监测
+  permalink: /case/level
+  description: 非接触水位、液位与料位监测等测距应用案例
