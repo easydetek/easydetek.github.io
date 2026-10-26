@@ -46,3 +46,8 @@ gesture:
   label: 挥手识别
   permalink: /case/gesture
   description: 非接触手势/挥手识别等交互类应用案例
+
+doorlock:
+  label: 门锁感应
+  permalink: /case/doorlock
+  description: 非接触人体感应门锁、接近唤醒等应用案例
