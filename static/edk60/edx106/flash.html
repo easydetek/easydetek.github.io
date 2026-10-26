@@ -61,8 +61,8 @@
   <table>
     <tr><th>✅</th><th>检查项</th><th>怎么确认</th></tr>
     <tr><td>1</td><td>EDX106 模组已插在板子的 <b>H3</b>，<b>5 根线全接</b>：
-      <code>V→V</code>、<code>G→G</code>、<code>SCL→T</code>、<code>SDA→A</code>、<code>OUT→A2</code></td>
-      <td>H3 丝印 <code>RES A R T G V P</code>。本固件用 <b>IO4=SCL / IO5=SDA / IO2=OUT（A2）</b>，
+      <code>V→V</code>、<code>G→G</code>、<code>SCL→T</code>、<code>SDA→R</code>、<code>OUT→A</code></td>
+      <td>H3 丝印 <code>RES A R T G V P</code>。本固件用 <b>IO4=SCL / IO5=SDA / IO2=OUT（A）</b>，
         IO14 拉高给模组上电。<b>接反 SCL/SDA 的典型现象是 <code>err I2C_NO_DEVICE</code></b></td></tr>
     <tr><td>2</td><td><b>不需要任何外部电阻</b></td>
       <td>固件用 C6 <b>内部上拉 + 100 kHz</b> 已在实物上稳定跑通（<code>i2c ok … pullup=internal</code>）。
@@ -160,7 +160,7 @@
     <tr><td>目标芯片 / 板子</td><td>ESP32-C6 · EDK60_VA V1.0</td></tr>
     <tr><td>雷达模组</td><td>EDX106（AT10LP1T1RDB，10.525 GHz，I2C 从机 <b>0x28</b>，≤400 kHz）</td></tr>
     <tr><td>接线</td><td><b>5 根</b>：V→H3 V · G→H3 G · <b>SCL→H3 T（IO4）</b> · <b>SDA→H3 A（IO5）</b> ·
-      <b>OUT→H3 A2（IO2）</b>；IO14 拉高给模组上电</td></tr>
+      <b>OUT→H3 A（IO2）</b>；IO14 拉高给模组上电</td></tr>
     <tr><td>外部元件</td><td><b>不需要</b>（内部上拉 + 100 kHz 已实测稳定）；长线/扫不到 0x28 时才建议 2×4.7 kΩ</td></tr>
     <tr><td>I2C 频率</td><td><b>100 kHz</b>，内部上拉（<code>pullup=internal</code>）</td></tr>
     <tr><td>串口参数</td><td><b>115200</b> · 8N1 · 无流控（原生 USB CDC，免驱）</td></tr>
@@ -235,7 +235,7 @@
 
   <div class="box warn">
     <b>6. 能不能把 EDX106 和 EDV11P / EDV163 同时插上一起用？</b><br>
-    <b>不能同时用。</b>EDX106 这套用的是 <b>H3 的全部信号脚</b>（T=SCL、A=SDA、A2=OUT），
+    <b>不能同时用。</b>EDX106 这套用的是 <b>H3 的全部信号脚</b>（T=SCL、R=SDA、A=OUT），
     而 EDV11P / EDV163 也是插 H3（UART 走 T/A）。两者<b>抢同一组排针</b>，
     同时插会既抢总线又抢电源使能，表现为两边数据都乱、或 <code>i2c ok</code> 都过不去。<br>
     → 一次只插一个模组；换模组时<b>先断电</b>再插拔，然后烧对应固件<br>
