@@ -67,6 +67,17 @@ $env:DISABLE_LAST_UPDATE='1'; pnpm run build
 
 推送完成不等于线上更新——这两个是不同链路，交付时要分别确认。
 
+### 6.1 HTTPS 证书（改 Nginx 配置前必读）
+
+线上 TLS 是**宿主机 Nginx + certbot（webroot 方式）**，不是容器、也不是 Caddy（`easydetek-caddy` 容器是旧方案遗留，不发布端口）。
+
+- 基线配置：仓库根 `nginx-server.conf`；服务器位置 `/etc/nginx/conf.d/docs.easydetek.com.conf`
+- 续签：`certbot.timer` 每天两次 + `renew_hook = systemctl reload nginx`；校验目录 `/var/www/certbot`
+- **两条硬约束**（2026-11 证书过期事故根因，违者续签会静默失败）：
+  1. 不可用 `authenticator = standalone`（会与 Nginx 抢 80 端口）
+  2. 80 端口区块的 `return 301` 必须写在 `location / { }` 内，不能写 server 级（会短路 ACME location）
+- 排障手册与验证命令见 `DEPLOY.md` 第三、四、五节。
+
 ## 7. PDF / 方案册转文档
 
 方案册若为矢量排版（PPT 导出），页面里的图形**抽不出位图**，需整页渲染（例如 `pymupdf` 150 dpi）后再作为配图；正文（规格、配置、接口矩阵）必须重排成 Markdown 表格，不能整页当正文贴图。
