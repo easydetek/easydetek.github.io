@@ -18,6 +18,8 @@
   li { margin:8px 0; }
   .box { background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin:14px 0; }
   .box.warn { background:#fff7ed; border-color:#fed7aa; }
+  .box.ok { background:#f0fdf4; border-color:#86efac; }
+  .box.ok b { color:#15803d; }
   .box.danger { background:#fef2f2; border:2px solid #e11d48; border-radius:10px;
                 padding:16px 18px; margin:0 0 22px; color:#881337; font-size:15px; }
   .box.danger b { color:#9f1239; }
@@ -44,9 +46,10 @@
 
   <h1>网页烧录 · 人体存在检测演示固件（EDK60 + EDV163-N-03）</h1>
 
-  <div class="box danger">
-    ⚠️ 本固件与演示页<b>尚未在 EDV163-N-03 实物上实测</b>（当前验证的是桥接实现、网页端解析器与
-    16 条无硬件自测），实测数据待补；如遇问题请反馈
+  <div class="box ok">
+    ✅ <b>2026-11-19 已上板跑通首轮</b>：模组自报 <code>EDQ163_VB</code> / 固件 <code>V2.1.0</code>，V1.4 帧稳定流入、
+    <code>0x81</code> 全部 9 B 单目标、上报周期实测 5010 ms、会话内 33 帧 0 坏帧 0 未归属字节、有人↔无人可翻转。
+    但这是<b>单点、约 3 分钟</b>的一次会话——帧率/精度/长稳/静止识别率仍待实测；如遇问题请反馈
     <a href="mailto:support@easydetek.com">support@easydetek.com</a>
   </div>
 
@@ -162,7 +165,7 @@
       （有人 1B / 状态 1B / 方向 1B / X int16 大端有符号 / Y int16 大端有符号 /
       Z <b>uint16 大端无符号</b>，mm）。V1.4 已删除 <code>0x13</code> 检测通道数量，
       <b>没有「通道」概念</b>：长度 ≠ 9 一律判「载荷长度异常」并把原始十六进制打出来</td></tr>
-    <tr><td class="n">上板实测</td><td><span class="no">❌ 尚未在 EDV163-N-03 实物上验证</span>（模组当前烧的是其它固件，换固件后才能测）</td></tr>
+    <tr><td class="n">上板实测</td><td><span class="ok">✅ 2026-11-19 首轮上板通过</span>（EDQ163_VB / 固件 V2.1.0：33 帧 0 坏帧 0 未归属、上报周期 5010 ms、有人↔无人可翻转）；<b>长稳、精度、静止识别率仍待测</b></td></tr>
     <tr><td class="n">已有验证</td><td><span class="ok">网页端解析器自测 16/16</span> +
       <span class="ok">额外回归 63 项</span>（<code>node scripts/edv163_presence_selftest.mjs</code>，
       抽的是 presence.html 里同一份解析器代码；断言数以脚本实跑输出为准）；<br>
@@ -237,11 +240,11 @@
   </div>
 
   <div class="foot">
-    <b>说明</b>：本固件与演示页为技术演示用途（版本 <b>0.9.0</b>，<b>尚未实机验证</b>），
+    <b>说明</b>：本固件与演示页为技术演示用途（版本 <b>0.9.0</b>，<b>2026-11-19 已上板首轮验证，长稳与精度未测</b>），
     数据仅供评估与二次开发参考。协议依据：<b>《EDV163-N-03 串口通信协议 V1.4》（2026-11-04）</b>。<br>
     演示页<b>不提供</b> <code>0x28</code>（自动测高）与 <code>0x18=0</code>（关闭射频）的发送入口——这两条要么会改掉你的安装参数、
     要么会让设备彻底没有上报，需要时请用工程师上位机或自研脚本。<br>
-    <b>免责</b>：「有人 / 无人」判定受安装几何、高度、环境反射、遮挡与固件版本影响，且本链路<b>尚未在实物上验证</b>，
+    <b>免责</b>：「有人 / 无人」判定受安装几何、高度、环境反射、遮挡与固件版本影响，本链路<b>只做过单点短时首轮验证</b>（无长稳与精度标定），
     <b>不可用于安防报警、消防、生命监护、门禁安全联锁</b>等有责任后果的场景。<br>
     如有实测问题请反馈 <a href="mailto:support@easydetek.com">support@easydetek.com</a> ·
     MIT License · 署名 <a href="https://github.com/fuhua817">@fuhua817</a>
