@@ -3,30 +3,36 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EDV163-N-03 人体存在检测 · 网页版（Web Serial 256000，默认只读）</title>
+<title>EDV163-N-03 人体存在检测 · 网页版（Web Serial 256000，协议 V1.4，默认只读）</title>
 <!--
   单文件、无外链、无 CDN、可离线打开。
   EDK60 只做 UART↔原生 USB 的纯字节透传，协议解析全部在本页前端完成。
 
-  协议依据（唯一权威）：《EDV163 替换 EDQ152 成品通用协议 V1.1》全文
-    · 串口 256000 8N1 无流控；大端            （§1 串口通信约定）
-    · 主机→模组帧最长 50 B，超出不识别        （§1）
-    · 帧 = 45 44 | 长度(2) | msgid(2) | op | type | tlv_len(2) | value | 校验和 | 0A
-      长度 = 12 + N（N = 转义前 value 字节数）；校验和 = 自 45 起至 value 末逐字节累加 mod 256
-    · 转义：0x0A→09 01、0x09→09 00，只对「帧头..校验和」整段，帧尾 0A 不转义
-    · 0x81 上报（op=0xA3）：每通道 9 B = [有人][无人0/静止1/运动2][静止0/靠近1/远离2][x i16][y i16][z i16]
-    · 0x80 调试数据：80 B = 40 运动能量 + 40 静止能量（0-100），需先 SET 0x1E=1（待实测）
+  协议依据（唯一权威）：《EDV163-N-03 串口通信协议 V1.4》（2026-11-04）
+    · 串口 256000 8N1 无流控；大端                          （§1 串口通信约定）
+    · 帧 = 45 44 | 长度(2)=11+N | msgid(2) | op(1) | type(1) | len(2)=N | Value(N) | 校验和(1)
+      * 没有帧尾 0x0A
+      * 不做字节填充：Value 里的 0x09 / 0x0A 保持原值，切帧只靠「帧头 + 长度字段」
+      * 校验和 = 自帧头 45 起至 Value 末逐字节求和 mod 256（即 data[0:-1] 的末字节比较）
+    · V1.4 没有「主机→模组 50 BYTE 上限」；组帧层可一帧产出 SET 0x29 ×10 = 142 B（设备接收能力未实测）
+    · op：A0 Get / A1 Set / A2 Report（对 Get、Set 的被动回复）/ A3 Status（主动上报）/ A9 ACK
+      （协议未定义 A9 的载荷与状态码 → 收到即视为已应答，绝不解释载荷）
+    · 0x81 上报（op=0xA3）：固定 9 B 单目标 = [有人0/1][无人0/静止1/运动2][静止0/靠近1/远离2]
+      [X int16 大端][Y int16 大端][Z uint16 大端无符号]
+      V1.4 已删除 0x13 检测通道数量 → 本页不含「通道数 = tlv_len/9」这套口径，tlv_len≠9 即载荷长度异常
+    · V1.4 已删除调试模式与调试数据输出命令 → 数据源不存在，故本页不含距离门能量柱，
+      第二块面板改为「X-Y 俯视 + 历史轨迹 + 检测范围框 + 屏蔽区」
 
   视觉与不变量契约照抄同站 static/edk60/edv163/level.html：
     · 无外链 / 无 CDN / 不写任何本地存储（不使用任何浏览器持久化或站点数据接口）
-    · 波特率钉死 256000，界面不提供改档
-    · 帧步长钉死：0x81 = 9 B/通道，0x80 = 80 B，绝不按 7 B/8 B 猜
-    · 默认只读：连接后只发 GET；任何 SET 必须用户单独确认 + 等 A2 应答 + 回读比对
+    · 波特率钉死 256000，界面不提供改档（与 EDK60 透传桥固件一致）
+    · 0x81 步长钉死 9 B 单目标，绝不按 7 B / 8 B / 多通道猜
+    · 默认只读：连接后只发 13 条 GET；任何 SET 必须用户单独确认 + 等 A2 应答 + 回读比对
   本页只读串口；不写任何本地存储。主题切换只写 document.documentElement.dataset.theme（不落盘）。
 
   本文件「页内自测」用例与 scripts/edv163_presence_selftest.mjs 同源：
-  后者用正则抽取本页 /* CORE-BEGIN */ … /* CORE-END */ 之间的代码在 Node 里运行，
-  断言的就是本页真正跑的同一份解析器实现。
+  后者抽取本页 CORE-BEGIN…CORE-END / CASES-BEGIN…CASES-END 之间的代码在 Node 里运行，
+  断言的就是本页真正跑的同一份解析器实现与同一张用例表。
 -->
 <style>
   :root {
@@ -75,8 +81,6 @@
   .tb-sub { color:var(--sub); font-size:12px; min-width:0; }
   .tb-sub b { color:#b45309; }
   .tb-controls .sep { width:1px; height:22px; background:var(--line); margin:0 2px; flex:none; }
-  .inline { display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--sub);
-            white-space:nowrap; }
 
   /* 状态条 / 统计条（顶栏，吸顶不滚动） */
   .statusbar { display:flex; gap:6px; flex-wrap:wrap; align-items:center; font-size:12px;
@@ -107,6 +111,8 @@
             padding:5px 10px; white-space:nowrap; color:var(--sub); }
   .switch input { width:15px; height:15px; margin:0; }
   .switch.tiny { font-size:12px; padding:3px 8px; }
+  .inline { display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--sub);
+            white-space:nowrap; }
 
   /* 主区：两列，高度 = 100vh − 顶栏；右列独立滚动 */
   .main { flex:1; min-height:0; display:grid; gap:var(--gap);
@@ -152,9 +158,12 @@
             background:var(--card2); border:1px solid var(--line); border-radius:8px;
             padding:1px 9px; white-space:nowrap; }
   .kvchip b { color:var(--fg); font-weight:600; font-variant-numeric:tabular-nums; }
+  .kvchip.bad { border-color:#fca5a5; background:#fef2f2; color:#991b1b; }
+  .kvchip.bad b { color:#991b1b; }
   .hero-note { font-size:11.5px; color:var(--sub); line-height:1.45; }
   .hero-note.warn { color:#9a3412; }
   .hero-note.err { color:#b91c1c; font-weight:600; }
+  .hero-note b { color:inherit; }
   /* 右侧「本次状态已持续」大计时 */
   .hero-right { flex:none; width:206px; display:flex; flex-direction:column; justify-content:center;
                 gap:2px; border-left:1px solid var(--line); padding-left:14px; }
@@ -163,43 +172,40 @@
                      font-variant-numeric:tabular-nums; letter-spacing:-.5px; }
   .hero-right .sw { font-size:11.5px; color:var(--sub); font-variant-numeric:tabular-nums; }
 
-  /* ===================== ② 40 距离门能量条 ===================== */
-  .energy-panel { flex:1; min-height:0; display:flex; flex-direction:column; }
-  .energy-head { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:11.5px;
-                 color:var(--sub); margin-bottom:4px; }
+  /* ===================== ② X-Y 俯视 + 历史轨迹 + 范围框 + 屏蔽区 ===================== */
+  .xy-panel { flex:1; min-height:0; display:flex; flex-direction:column; }
+  .xy-head { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:11.5px;
+             color:var(--sub); margin-bottom:4px; }
   .lg { display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
-  .lg i { width:9px; height:9px; border-radius:3px; display:inline-block; flex:none; }
-  .energy-body { position:relative; flex:1; min-height:0; display:flex; flex-direction:column; }
-  .energy-plot { flex:1; min-height:0; position:relative; display:flex; align-items:flex-end;
-                 gap:2px; padding:0 0 0 26px; }
-  .eg-yaxis { position:absolute; left:0; top:0; bottom:14px; width:24px; font-size:10px;
-              color:#9aa3af; font-variant-numeric:tabular-nums; }
-  .eg-yaxis span { position:absolute; right:4px; transform:translateY(50%); line-height:1;
-                   white-space:nowrap; }
-  .eg-yaxis span::after { content:''; position:absolute; right:-4px; top:50%; width:3px; height:1px;
-                          background:var(--line); }
-  .eg-gate { flex:1 1 0; min-width:0; height:100%; position:relative; display:flex;
-             align-items:flex-end; gap:1px; }
-  .eg-bar { flex:1 1 0; min-width:0; height:0%; border-radius:2px 2px 0 0;
-            transition:height .16s ease-out; }
-  .eg-bar.motion { background:linear-gradient(180deg,#f59e0b,#c2410c); }
-  .eg-bar.still { background:linear-gradient(180deg,#38bdf8,#0b6bcb); }
-  .eg-xaxis { flex:none; height:14px; display:flex; padding-left:26px; gap:2px; }
-  .eg-xlab { flex:1 1 0; min-width:0; font-size:10px; color:#9aa3af; text-align:center;
-             font-variant-numeric:tabular-nums; overflow:hidden; white-space:nowrap; }
-  .energy-empty { position:absolute; inset:0 0 14px 26px; display:flex; align-items:center;
-                  justify-content:center; text-align:center; font-size:12px; color:#9a3412;
-                  background:rgba(255,247,237,.86); border:1px dashed #fed7aa; border-radius:10px;
-                  padding:8px 14px; line-height:1.5; }
-  .energy-empty[hidden] { display:none; }
-
-  /* ===================== ③ x/y 俯视散点 ===================== */
-  .scatter-panel { display:flex; flex-direction:column; }
+  .lg i { width:11px; height:11px; border-radius:3px; display:inline-block; flex:none; }
+  .lg i.solid { background:transparent; border:2px solid var(--brand); height:9px; }
+  .lg i.dashed { background:transparent; border:2px dashed #7c3aed; height:9px; }
+  .lg i.fill { background:rgba(249,115,22,.30); border:1px solid #f97316; }
+  .lg i.trail { border-radius:50%; background:linear-gradient(90deg,rgba(21,128,61,.15),
+                rgba(21,128,61,.9)); }
+  .xy-body { position:relative; flex:1; min-height:0; display:flex; }
   #scatterWrap { position:relative; flex:1; min-height:0; }
   #scatter { position:absolute; inset:0; display:block; width:100%; height:100%;
              border-radius:8px; background:var(--card2); }
-  .scatter-note { flex:none; font-size:11px; color:var(--sub); margin-top:3px; line-height:1.45;
-                  font-variant-numeric:tabular-nums; }
+  .xy-empty { position:absolute; left:40px; right:12px; top:8px; font-size:11.5px;
+              color:#9a3412; background:rgba(255,247,237,.92); border:1px dashed #fed7aa;
+              border-radius:8px; padding:4px 9px; line-height:1.5; }
+  .xy-empty[hidden] { display:none; }
+  .xy-note { flex:none; font-size:11px; color:var(--sub); margin-top:3px; line-height:1.45;
+             font-variant-numeric:tabular-nums; }
+  .xy-note b { color:var(--fg); }
+
+  /* ===================== ③ 范围 / 屏蔽区明细表 ===================== */
+  .range-panel { display:flex; flex-direction:column; }
+  .rp-body { flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; padding-right:2px; }
+  .rp-body table { margin-bottom:6px; }
+  .rp-sub { font-size:11px; color:var(--sub); margin:0 0 3px; }
+  .masklist { display:flex; flex-direction:column; gap:2px; }
+  .mask-row { display:flex; gap:7px; align-items:baseline; font-size:11.5px;
+              font-variant-numeric:tabular-nums; border-bottom:1px dashed var(--line);
+              padding:1px 0; }
+  .mask-row .id { flex:none; width:34px; color:#c2410c; font-weight:700; }
+  .mask-row .rg { flex:1; min-width:0; color:var(--sub); word-break:break-all; }
 
   /* ===================== ④ 事件时间线 ===================== */
   .tl-panel { display:flex; flex-direction:column; }
@@ -217,9 +223,9 @@
   .row { display:grid; grid-template-columns:118px 1fr; gap:8px; align-items:center;
          margin-bottom:6px; font-size:13px; }
   .row label { color:var(--sub); }
-  input[type=number], select, input[type=text] { font:inherit; font-size:13px; padding:5px 8px;
+  input[type=number], input[type=text] { font:inherit; font-size:13px; padding:5px 8px;
       border:1px solid #cbd5e1; border-radius:7px; background:var(--card); color:var(--fg); }
-  input[type=number]:disabled, select:disabled, input[type=text]:disabled {
+  input[type=number]:disabled, input[type=text]:disabled {
       background:var(--card2); color:#9ca3af; }
   .hint { font-size:11.5px; color:var(--sub); margin:2px 0 8px; line-height:1.5; }
   .hint b { color:var(--fg); }
@@ -272,7 +278,7 @@
   .btnlist .item code { background:var(--card3); }
   .foot { color:var(--sub); font-size:11px; margin:0; line-height:1.5; }
 
-  /* 矮屏（1280×720）：压英雄区与下排，保证能量条仍有可用高度 */
+  /* 矮屏（1280×720）：压英雄区与下排，保证俯视图仍有可用高度 */
   @media (max-height: 820px) {
     :root { --hero-h: 112px; --lower-h: 188px; --gap: 10px; }
     .panel { padding:8px 10px; }
@@ -291,9 +297,10 @@
     .app { height:auto; min-height:100vh; }
     .main { grid-template-columns:1fr; overflow:visible; }
     .hero-panel { height:auto; }
-    .energy-panel { min-height:210px; }
+    .xy-panel { min-height:320px; }
     .lower-row { height:auto; grid-template-columns:1fr; }
     #scatterWrap { height:300px; }
+    .range-panel { min-height:180px; }
     .tl-panel { height:230px; }
     .col-right { overflow:visible; }
     .hero-right { width:170px; }
@@ -309,7 +316,7 @@
       <h1>EDV163-N-03 人体存在检测 · 网页版</h1>
       <span class="tb-sub">
         EDK60_VA 桥接器（纯字节双向透传）+ EDV163-N-03 · <b>256000 8N1</b> ·
-        协议解析全部在前端 · <b>默认只读</b>：连接只发 GET，写入需逐条确认
+        协议 <b>V1.4</b>（帧长 = 11 + N，无帧尾）· 解析全在前端 · <b>默认只读</b>：连接只发 13 条 GET
       </span>
     </div>
 
@@ -318,16 +325,16 @@
       <span class="chip">串口 <b id="st-port">—</b></span>
       <span class="chip" title="ESP32-C6 原生 USB CDC：浏览器波特率不影响板载 UART 线速，档位钉死 256000">波特率 <b>256000</b></span>
       <span class="chip" title="从串口收到的全部字节（含噪声、半包、坏帧）">总字节 <b id="st-bytes">0</b></span>
-      <span class="chip">帧数 <b id="st-frames">0</b></span>
-      <span class="chip" title="op=0xA3 / type=0x81：有人状态上报（每通道 9 B）">0x81 <b id="st-f81">0</b></span>
-      <span class="chip" title="op=0xA3 / type=0x80：40 运动能量 + 40 静止能量（需 0x1E=1）">0x80 <b id="st-f80">0</b></span>
-      <span class="chip" id="st-badchip" title="长度非法 + 校验和错 + 帧尾缺失/提前 + 非法转义 + TLV 不符 + 载荷口径异常">
+      <span class="chip" title="所有 op/type 的完整好帧数（含 0xA2 应答）">帧数 <b id="st-frames">0</b></span>
+      <span class="chip" title="op=0xA3 / type=0x81：有人状态上报，固定 9 B 单目标">0x81 <b id="st-f81">0</b></span>
+      <span class="chip" id="st-badchip" title="长度非法 + 校验和错 + len 与帧长不符 + 0x81 载荷长度异常">
         坏帧 <b id="st-bad">0</b> · <b id="st-badrate">0.0</b>%</span>
-      <span class="chip" id="st-noisechip" title="未能归属到任何完整帧的字节（重同步丢弃量）/ 占比">
+      <span class="chip" id="st-noisechip" title="未能归属到任何完整好帧的字节（帧头前噪声 + 坏帧吞掉的字节）/ 占总字节比">
         未归属 <b id="st-noise">0</b> · <b id="st-noiserate">0.0</b>%</span>
-      <span class="chip" title="非法转义序列（0x09 后不是 0x00/0x01）累计次数">转义错误 <b id="st-esc">0</b></span>
-      <span class="chip" title="同一候选帧「未转义」「已转义」两种还原口径都能通过校验（或都不能）的累计次数">
-        口径歧义 <b id="st-amb">0</b></span>
+      <span class="chip" title="校验和不符的累计次数（sum(data[0:-1]) 的末字节 ≠ 帧内校验和）">
+        校验和错 <b id="st-ck">0</b></span>
+      <span class="chip" title="帧头重同步次数：丢弃无归属字节块 + 坏帧后丢 1 字节重找帧头的累计次数">
+        帧头重同步 <b id="st-resync">0</b></span>
       <span class="chip">帧间隔 <b id="st-gap">—</b></span>
       <span class="chip" id="st-basischip" title="当前有人/无人判定的依据：真帧 = 静默窗内收到 0x81；超时推断 = 超窗静默（协议允许，非故障）">
         判定依据 <b id="st-basis">—</b></span>
@@ -336,10 +343,10 @@
     <div class="tb-row tb-controls">
       <button id="btn-connect">连接串口</button>
       <button id="btn-disconnect" class="ghost" disabled>断开</button>
-      <button id="btn-readall" class="ghost" disabled title="重新发送 14 条只读 GET（默认只读路径，零 SET）">重新回读参数</button>
+      <button id="btn-readall" class="ghost" disabled title="重新发送 13 条只读 GET（默认只读路径，零 SET）">重新回读参数</button>
       <span class="sep"></span>
-      <button id="btn-inject81" class="ghost" title="向同一个解析器注入一条构造的 0x81 帧，用于无硬件时确认四块 UI 的渲染">注入 0x81 样例</button>
-      <button id="btn-inject80" class="ghost" title="向同一个解析器注入一条构造的 0x80 能量帧，用于确认能量条渲染">注入 0x80 样例</button>
+      <button id="btn-inject81" class="ghost" title="向同一个解析器注入一条构造的 0x81 帧，用于无硬件时确认界面渲染">注入 0x81 样例</button>
+      <button id="btn-injectrange" class="ghost" title="注入 0x27 检测范围 / 0x29 屏蔽区的 0xA2 回读样例，确认俯视图渲染">注入范围/屏蔽区样例</button>
       <button id="btn-selftest" class="ghost">运行页内自测</button>
       <span class="sep"></span>
       <button id="btn-theme" class="ghost small" title="跟随系统 → 强制浅色 → 强制深色 循环；不写任何本地存储">主题：跟随系统</button>
@@ -347,15 +354,16 @@
     </div>
 
     <div class="note" id="envNote" hidden></div>
+    <div class="errline" id="rfWarn" hidden></div>
     <div class="errline" id="payloadWarn" hidden></div>
   </header>
 
-  <!-- ================= 主区：左列（四块可视化）/ 右列（配置与工具，独立滚动） ================= -->
+  <!-- ================= 主区：左列（三块可视化）/ 右列（配置与工具，独立滚动） ================= -->
   <main class="main">
 
     <section class="col-left">
 
-      <!-- ① 大状态卡：有人/无人 + 静止/运动 + 靠近/远离 + 持续时长 + 最近切换 -->
+      <!-- ① 大状态卡：有人/无人 + 静止/运动 + 靠近/远离 + 坐标 + 持续时长 -->
       <section class="panel hero-panel">
         <div class="hero-left">
           <div class="hero-cap">
@@ -366,20 +374,20 @@
             <span class="tag off" id="h-basis">判定依据 —</span>
             <span class="tag off" id="h-fault">链路 —</span>
           </div>
-          <div class="hero-num dim" id="heroNum"><span id="h-word">等待数据</span></div>
+          <div class="hero-num dim" id="heroNum"><span id="h-word">等待数据</span><span class="unit" id="h-unit"></span></div>
           <div class="hero-sub">
-            通道 <b id="h-chan">—</b> ／ 坐标 x <b id="h-x">—</b> mm · y <b id="h-y">—</b> mm ·
-            z <b id="h-z">—</b> mm ／ 有效通道 <b id="h-valid">—</b>
+            单目标坐标 x <b id="h-x">—</b> mm · y <b id="h-y">—</b> mm ·
+            z <b id="h-z">—</b> mm ／ 固件 <b id="h-fw">—</b>
           </div>
           <div class="hero-chips">
             <span class="kvchip">挂高 0x25 <b id="h-mount">—</b> mm</span>
             <span class="kvchip">上报周期 0x17 <b id="h-period">—</b></span>
             <span class="kvchip">静默窗 max(3×周期, 8 s) <b id="h-window">—</b></span>
             <span class="kvchip">触发模式 0x24 <b id="h-mode">—</b></span>
-            <span class="kvchip">调试模式 0x1E <b id="h-debug">—</b></span>
+            <span class="kvchip" id="h-rfchip">射频 0x18 <b id="h-rf">—</b></span>
           </div>
           <div class="hero-note" id="h-note">
-            协议口径：触发有人后按 0x17 周期上报 0x81；无人期间<b>可能完全静默</b>。
+            协议口径：<b>触发有人后</b>按 0x17 周期上报 0x81；无人期间<b>可能完全静默</b>。
           </div>
         </div>
         <div class="hero-right">
@@ -390,46 +398,44 @@
         </div>
       </section>
 
-      <!-- ② 40 个距离门能量条：运动能量 / 静止能量（来自 0x80，需 0x1E=1，待实测） -->
-      <section class="panel energy-panel">
-        <div class="energy-head">
-          <b style="color:var(--sub)">距离门能量 1~40（0x80）</b>
-          <span class="lg"><i style="background:linear-gradient(180deg,#f59e0b,#c2410c)"></i>运动能量</span>
-          <span class="lg"><i style="background:linear-gradient(180deg,#38bdf8,#0b6bcb)"></i>静止能量</span>
-          <span class="lg" style="color:#9aa3af">门宽随雷达配置，<b>未实测</b></span>
+      <!-- ② X-Y 俯视 + 历史轨迹 + 检测范围框 + 屏蔽区 -->
+      <section class="panel xy-panel">
+        <div class="xy-head">
+          <b style="color:var(--sub)">X-Y 俯视 · 历史轨迹 · 检测范围 · 屏蔽区</b>
+          <span class="lg"><i class="solid"></i>0x27 运动范围</span>
+          <span class="lg"><i class="dashed"></i>0x27 存在范围</span>
+          <span class="lg"><i class="fill"></i>0x29 屏蔽区</span>
+          <span class="lg"><i class="trail"></i>0x81 轨迹（≤<span id="xyTrailMax">300</span>，越旧越淡）</span>
           <span class="grow" style="flex:1"></span>
-          <span id="energyMeta" style="color:#9aa3af">尚未收到 0x80</span>
+          <span id="xyMeta" style="color:#9aa3af">尚未收到 0x81</span>
         </div>
-        <div class="energy-body">
-          <div class="energy-plot">
-            <div class="eg-yaxis" id="egYAxis">
-              <span style="bottom:100%">100</span>
-              <span style="bottom:50%">50</span>
-              <span style="bottom:0%">0</span>
-            </div>
-            <div id="energyGrid" style="position:absolute;inset:0 0 0 26px;display:flex;
-                 align-items:flex-end;gap:2px;"></div>
-            <div class="energy-empty" id="energyEmpty">
-              未收到能量帧 · 需 <code>SET 0x1E=1</code> 开调试模式（<b>待实测</b>）<br>
-              本页不会因此报错或卡住；能量区留空，其余三块照常工作
+        <div class="xy-body">
+          <div id="scatterWrap">
+            <canvas id="scatter" role="img"
+              aria-label="X-Y 俯视图（毫米刻度）：画出 0x27 运动/存在检测范围框、0x29 屏蔽区、最近 300 个 0x81 落点轨迹与当前点坐标标签"></canvas>
+            <div class="xy-empty" id="xyEmpty">
+              等待 0x81 上报：范围框与屏蔽区来自设备 <code>0x27</code> / <code>0x29</code> 回读，
+              <b>未回读成功时用协议默认值并标注「默认值」</b>；无硬件可点「注入 0x81 样例 / 注入范围/屏蔽区样例」预览
             </div>
           </div>
-          <div class="eg-xaxis" id="egXAxis"></div>
+        </div>
+        <div class="xy-note" id="scatterNote">
+          框来自设备回读；未回读成功则用协议默认值（运动/存在范围 ±3000 mm）并标注「默认值」。
         </div>
       </section>
 
-      <!-- ③ x/y 俯视散点 + ④ 事件时间线：同一行 -->
+      <!-- ③ 范围 / 屏蔽区明细 + ④ 事件时间线：同一行 -->
       <div class="lower-row">
-        <section class="panel scatter-panel">
-          <h2>俯视 x/y 散点<span class="grow"></span>
-            <span class="tag off" id="sc-tag">检测范围未回读</span>
+        <section class="panel range-panel">
+          <h2>检测范围 0x27 / 屏蔽区 0x29<span class="grow"></span>
+            <span class="tag off" id="rngTag">未回读</span>
           </h2>
-          <div id="scatterWrap">
-            <canvas id="scatter" role="img"
-              aria-label="俯视散点：横轴 x、纵轴 y（毫米），画出 0x27 检测范围框与目标点，z 值以标签显示"></canvas>
-          </div>
-          <div class="scatter-note" id="scatterNote">
-            范围框来自 0x27（默认 ±3000 mm）；z 有效范围由挂高 0x25 决定。
+          <div class="rp-body">
+            <div class="rp-sub" id="rngText">尚未回读 0x27（默认值：运动/存在范围均为 ±3000 mm）</div>
+            <div class="rp-sub" id="maskText">尚未回读 0x29（屏蔽区数量未知）</div>
+            <div class="masklist" id="maskList">
+              <div class="empty">无屏蔽区数据</div>
+            </div>
           </div>
         </section>
 
@@ -459,11 +465,11 @@
         </div>
         <p class="hint" style="margin:8px 0 0">
           ESP32-C6 原生 USB CDC：浏览器波特率不影响板载 UART 线速，界面故意不提供改档，
-          避免误设 921600 后「能连接但一个合法帧都收不到」。
+          避免误设 921600 后「能连接但一个合法帧都收不到」。V1.4 协议同样固定 256000。
         </p>
       </section>
 
-      <!-- ===== 参数回读（默认只读：连接后只发这些 GET） ===== -->
+      <!-- ===== 参数回读（默认只读：连接后只发 13 条 GET） ===== -->
       <section class="panel">
         <h2>参数回读（默认只读）<span class="grow"></span>
           <span class="tag off" id="rd-tag">未查询</span>
@@ -475,8 +481,9 @@
           </table>
         </div>
         <p class="hint" style="margin:6px 0 0">
-          连接成功后自动发 14 条 <code>op=0xA0</code> GET（<b>零 SET</b>）；任何数值都只来自设备真实应答，
-          未应答的显示「超时未回答」而不是猜测值。
+          连接成功后自动发 13 条 <code>op=0xA0</code> GET（<b>零 SET</b>）：
+          <code>0x01 0x02 0x12 0x17 0x18 0x1B 0x1D 0x23 0x24 0x25 0x26 0x27 0x29</code>。
+          任何数值都只来自设备真实应答，未应答的显示「超时未回答」而不是猜测值。
         </p>
       </section>
 
@@ -486,13 +493,7 @@
         <p class="warnline">
           ⚠ 会改写雷达当前配置，请确认目标设备就是演示用的那一台
         </p>
-        <div class="btnlist" id="presetList">
-          <div class="item"><span class="s">·</span><span><code>0x17</code> 上报周期 → <b>10</b>（= 1 s）</span></div>
-          <div class="item"><span class="s">·</span><span><code>0x11</code> 检测延时 → <b>3</b> s</span></div>
-          <div class="item"><span class="s">·</span><span><code>0x24</code> 触发模式 → <b>0</b>（正常运动触发）</span></div>
-          <div class="item"><span class="s">·</span><span><code>0x25</code> 挂高 → <b>2500</b> mm</span></div>
-          <div class="item"><span class="s">·</span><span><code>0x1E</code> 调试模式 → <b>1</b>（打开才有 0x80 能量帧，待实测）</span></div>
-        </div>
+        <div class="btnlist" id="presetList"></div>
         <div class="btnrow">
           <button class="small" id="btn-preset" disabled>应用演示推荐参数…（需确认）</button>
         </div>
@@ -504,23 +505,37 @@
         <div class="seq" id="presetSeqLog">尚未下发。</div>
       </section>
 
-      <!-- ===== 高危：0x1F 恢复出厂 ===== -->
+      <!-- ===== 高危操作：0x1F / 0x1A / 0x20 / 0x21 / 0x22 ===== -->
       <section class="panel">
-        <h2>高危操作</h2>
+        <h2>高危操作（默认禁用）</h2>
         <p class="errline" style="margin-bottom:8px">
-          <code>0x1F = 1</code> 会把雷达<b>全部参数恢复出厂</b>（含挂高、上报周期、检测范围），
-          演示前配置会被清掉。默认禁用。
+          <code>0x1F = 1</code> 恢复出厂：把雷达<b>全部参数</b>恢复出厂，演示前配置会被清掉。<br />
+          <code>0x1A = 1</code> 强制进入无人：会立刻把状态压成无人。<br />
+          <code>0x20 / 0x21 / 0x22</code> 自学习：改写雷达的学习参数。
         </p>
         <label class="switch tiny" style="margin-bottom:6px">
-          <input type="checkbox" id="chk-highrisk"> 我已知晓：解锁 <code>0x1F</code> 按钮
+          <input type="checkbox" id="chk-highrisk"> 我已知晓：解锁以下高危按钮
         </label>
         <div class="btnrow">
           <button class="small danger" id="btn-factory" disabled
-                  title="恢复出厂设置：需要解锁开关 + 两次确认">恢复出厂设置 0x1F…（双重确认）</button>
+                  title="恢复出厂设置：需要解锁开关 + 两次确认">恢复出厂 0x1F…</button>
+          <button class="small danger" id="btn-forceleave" disabled
+                  title="强制进入无人：需要解锁开关 + 两次确认">强制无人 0x1A…</button>
+        </div>
+        <div class="btnrow" style="margin-top:5px">
+          <span class="inline">自学习 <input type="number" id="inp-learnsec" value="60" min="30"
+                max="65535" style="width:88px" disabled> s</span>
+          <button class="small danger" id="btn-learn" disabled
+                  title="进入自学习：需要解锁开关 + 两次确认">进入自学习 0x20…</button>
+          <button class="small danger" id="btn-learnexit" disabled
+                  title="强制退出自学习（1 退出并保存 / 2 退出不保存）">退出自学习 0x21…</button>
+          <button class="small danger" id="btn-learnrestore" disabled
+                  title="自学习参数恢复（1 上一次学习参数 / 2 默认参数）">学习参数恢复 0x22…</button>
         </div>
         <p class="hint" style="margin:6px 0 0">
           解锁是<b>本页内</b>的一次性开关（不写任何存储）：勾选后仍需在第一个确认框点确定，
-          再在第二个确认框里点确定，才会发出那条 SET。
+          再在第二个确认框里<b>手动输入该命令的 type 十六进制</b>（例如 <code>1F</code>）才会发出那条 SET。
+          <code>0xA9</code> ACK 只按「收到即视为已应答」处理，不解释载荷（协议未定义）。
         </p>
       </section>
 
@@ -530,10 +545,14 @@
           <span class="tag off" id="selfTag">未运行</span>
         </h2>
         <p class="hint" style="margin-top:0">
-          覆盖 16 条用例：正文含 0x0A / 0x09 的转义帧、校验和错、帧尾缺失、
-          长度按转义前算（线上变长）、半包、粘包（一次 3 帧）、0x81 单通道 9 B、0x81 多通道、
-          presence=1/0、x/y/z 负坐标、tlv_len=8 旧口径、发送 &gt;50 B 拒发、0x80 能量帧、
-          双口径自适应计数、无人静默推断。启动时会静默跑一遍并把结论写进日志。
+          共 <b>16 条</b>用例：V1.4 §4 全部 39 条示例帧（19 组主机+应答，另 1 条 <code>0x81</code> 主动上报）回归、
+          Value 内含帧头字节的 0x01 Report 按长度切帧、官方 0x81 Status 解析、
+          X 负值 / Z 无符号（<code>FF FF</code> → 65535）、半包（分 3 段）、粘包（一次 3 帧）、
+          坏校验后重同步、非法长度只丢 1 字节、帧头前噪声计入未归属、
+          参数编解码往返（0x12/0x17/0x25/0x26/0x27/0x29 含 ×10）、
+          0x29 ×10 的 142 B 帧可发出（V1.4 无 50 B 限制）、5 条演示 SET 与事实包逐字节一致、
+          0x1F 只能写 1、静默推断与故障是两种独立状态。
+          启动时会静默跑一遍并把结论写进日志。
           同一份用例由 <code>scripts/edv163_presence_selftest.mjs</code> 在 Node 里跑。
         </p>
         <div class="btnrow" style="margin-top:0">
@@ -553,21 +572,20 @@
 
       <p class="foot">
         离线单文件，无外部依赖，不写任何本地存储（不使用任何浏览器持久化或站点数据接口）。
-        Web Serial 需 Chrome / Edge 89+（https 或 localhost）。串口参数 256000 8N1 无流控。
+        Web Serial 需 Chrome / Edge 89+（安全上下文 https 或 localhost）。串口参数 256000 8N1 无流控。
       </p>
     </aside>
   </main>
 </div>
-
 <script>
 'use strict';
 
 /* ==========================================================================
  * 一、配置区：协议常量 / 时序 / 渲染口径，全部集中在此
- *    数值来源：《EDV163 替换 EDQ152 成品通用协议 V1.1》
- *      §1 串口通信约定（256000 8N1、大端、主机→模组 ≤50 B、转义规则）
- *      §2 帧格式（45 44 | 长度 | msgid | op | type | tlv_len | value | 校验和 | 0A）
- *      §3 类型表（0x01~0x29、0x80 调试数据、0x81 上报数据）
+ *    数值来源：《EDV163-N-03 串口通信协议 V1.4》（2026-11-04）
+ *      §1 串口通信约定（256000 8N1、大端、无帧尾、不做字节填充）
+ *      §2 帧格式（45 44 | 长度=11+N | msgid | op | type | len=N | Value | 校验和）
+ *      §3 命令表（20 项）与 §3 上报数据 0x81（固定 9 B 单目标）
  * ========================================================================== */
 // ==== CFG-BEGIN ====
 const CFG = {
@@ -576,88 +594,91 @@ const CFG = {
 
   proto: {
     header: [0x45, 0x44],      // 帧头 45 44
-    tail: 0x0A,                // 帧尾 0x0A（不转义：转义只作用于「帧头..校验和」）
-    esc: 0x09,                 // 转义引导字节 0x09
-    minFrameLength: 12,        // 长度 = 12 + N（N = 转义前 value 字节数；含帧尾）
+    /* 帧长 = 11 + N（N = Value 字节数）。没有帧尾，没有字节填充：
+       Value 里的 0x09 / 0x0A 就是原值，切帧只靠「帧头 + 长度字段」。 */
+    minFrameLength: 11,
     /* 256 B 只是本实现的内存护栏（防止长度域被噪声打成天文数字后无限等包），
-       **不是协议条款**：协议原文只规定了「主机→模组 50 BYTE」的接收上限，没有 256 B 这一条。 */
+       **不是协议条款**：V1.4 没有任何单帧长度上限，0x29 ×10 = 142 B 是合法帧。 */
     maxFrameLength: 256,       // 实现护栏（非协议条款）
-    /* 主机→模组帧硬上限：协议原文「雷达接收数据最长为 50BYTE，超过 50BYTE 的部分不会识别」
-       → 12 + N > 50 必须在发送端直接拒绝（N > 38）。 */
-    maxHostFrameLength: 50,
-    /* 0x81 上报：每通道 9 B，无 count 前缀（通道数由 0x13 设定）
-       = [有人][无人0/静止1/运动2][静止0/靠近1/远离2][x i16][y i16][z i16] */
-    ch81Stride: 9,
-    /* 通道数合法区间：协议 §3「检测通道数量 0x13」取值范围 1-4，0x81 的通道数不能越出这个口径 */
-    ch81CountMin: 1,
-    ch81CountMax: 4,
-    /* 0x80 调试数据：80 B = 40 运动能量 + 40 静止能量（0-100） */
-    ch80Len: 80,
-    ch80Gates: 40,
     maxBuffer: 16384,
-    chunk: 4096
+    chunk: 4096,
+    /* 0x81 上报：固定 9 B 单目标（V1.4 已删除 0x13 检测通道数量，没有「通道」概念） */
+    report81Len: 9,
+    /* 0x29 屏蔽区：1B 数量 + N×(1B id + 6×int16)，N ≤ 10 */
+    maskStride: 13,
+    maskMax: 10,
+    /* 0x27 检测范围：8 × int16 = 16 B */
+    detectRangeLen: 16,
+    msgIdMax: 0xFFF0
   },
+
   OP: { GET: 0xA0, SET: 0xA1, REPORT: 0xA2, STATUS: 0xA3, ACK: 0xA9 },
+
+  /* V1.4 全表 20 项（V1.1 的 0x04/0x11/0x13/0x14/0x15/0x16/0x19/0x1C 已删除，此处不设常量） */
   TYPE: {
-    PRODUCT_INFO: 0x01, MODULE_INFO: 0x02, DETECT_DELAY: 0x11, LOCK_TIME: 0x12,
-    CHANNEL_COUNT: 0x13, CHANNEL_RANGE: 0x14, REPORT_FREQ: 0x17, WORK_MODE: 0x18,
-    TRIGGER_ENABLE: 0x1B, SELFCHECK_AFTER_LEAVE: 0x1C, FORCE_LEAVE_30MIN: 0x1D,
-    DEBUG_MODE: 0x1E, FACTORY_RESET: 0x1F, TRIGGER_MODE: 0x24, MOUNT_HEIGHT: 0x25,
-    DETECT_HEIGHT: 0x26, DETECT_RANGE: 0x27, MASK_ZONE: 0x29,
-    STATUS_80: 0x80, REPORT_81: 0x81
+    PRODUCT_INFO: 0x01, MODULE_INFO: 0x02, LOCK_TIME: 0x12, REPORT_FREQ: 0x17,
+    RF_MODE: 0x18, FORCE_LEAVE: 0x1A, TRIGGER_ENABLE: 0x1B, FORCE_LEAVE_30MIN: 0x1D,
+    FACTORY_RESET: 0x1F, LEARN_TIME: 0x20, LEARN_EXIT: 0x21, LEARN_RESTORE: 0x22,
+    LEARN_STATE: 0x23, TRIGGER_MODE: 0x24, MOUNT_HEIGHT: 0x25, DETECT_HEIGHT: 0x26,
+    DETECT_RANGE: 0x27, AUTO_HEIGHT: 0x28, MASK_ZONE: 0x29,
+    REPORT_81: 0x81
   },
   TYPE_NAMES: {
-    0x01: '产品信息', 0x02: '设备信息', 0x11: '检测延时', 0x12: '闭锁时间',
-    0x13: '检测通道数量', 0x14: '检测通道范围', 0x17: '状态上报频率', 0x18: '雷达工作模式',
-    0x1B: '触发使能', 0x1C: '无人后持续检测', 0x1D: '30min 强制无人', 0x1E: '调试模式',
-    0x1F: '出厂设置状态', 0x24: '触发模式', 0x25: '挂高', 0x26: '检测高度',
-    0x27: '检测范围', 0x29: '屏蔽区', 0x80: '调试数据', 0x81: '上报数据'
+    0x01: '产品信息', 0x02: '雷达模块信息', 0x12: '闭锁时间', 0x17: '状态上报频率',
+    0x18: '雷达射频工作模式', 0x1A: '强制进入无人', 0x1B: '触发使能',
+    0x1D: '30min 强制进入无人', 0x1F: '恢复出厂设置', 0x20: '进入自学习时间',
+    0x21: '强制退出自学习', 0x22: '自学习参数恢复', 0x23: '自学习状态',
+    0x24: '触发模式', 0x25: '设置挂高', 0x26: '设置检测高度', 0x27: '检测范围',
+    0x28: '自动测高', 0x29: '屏蔽区设置', 0x81: '上报数据'
   },
   /* 0x81 三个枚举字段（协议 §3） */
   PRESENCE_NAMES: { 0: '无人', 1: '有人' },
   STATE_NAMES: { 0: '无人', 1: '静止', 2: '运动' },
   DIR_NAMES: { 0: '静止', 1: '靠近', 2: '远离' },
-  /* 0x18 / 0x24 枚举 */
-  WORK_MODE_NAMES: { 0: '关闭雷达', 1: '正常工作' },
-  TRIGGER_MODE_NAMES: { 0: '正常运动触发', 1: '靠近触发', 2: '远离触发', 3: '靠近/远离触发' },
-  /* 0xA9 ACK：协议原文只写「ack回复」四个字，**没有**定义载荷长度、状态码或语义。
+  /* 0x18 / 0x24 / 0x21 / 0x22 枚举 */
+  RF_MODE_NAMES: { 0: '关闭雷达射频', 1: '正常工作' },
+  TRIGGER_MODE_NAMES: { 0: '正常运动', 1: '靠近', 2: '远离', 3: '靠近+远离' },
+  LEARN_EXIT_NAMES: { 1: '退出并保存', 2: '退出不保存' },
+  LEARN_RESTORE_NAMES: { 1: '恢复上一次学习参数', 2: '恢复默认参数' },
+  /* 0xA9 ACK：协议原文只写「ack回复」，**没有**定义载荷长度、状态码或语义。
      因此这里不设任何状态码表 —— 收到 0xA9 即视为「已应答」，载荷原样打印、不做解释。 */
 
-  /* 连接后的只读查询时序（全部 op=0xA0，零写入） */
-  readSeq: { firstDelayMs: 100, gapMs: 60 },
+  /* 连接后的只读查询时序（全部 op=0xA0，零写入；连发不等应答，沿用原页面做法） */
+  readSeq: { firstDelayMs: 100, gapMs: 60, answerTimeoutMs: 4000 },
 
   /* 写入（SET）约定：默认只读；写入必须显式确认 + 逐条等应答 + 逐条回读比对 */
   write: { timeoutMs: 500, gapAfterReplyMs: 80 },
 
   /* 无人静默口径：超过 max(3 × 上报周期, 8 s) 未收到 0x81 → 「无人（按静默推断）」，
-     这不是故障。周期取 0x17（单位 100 ms），未回读时按出厂默认 50 = 5 s。 */
+     这不是故障。周期取 0x17（单位 100 ms），未回读时按协议默认 50 = 5 s。 */
   silence: { factor: 3, minMs: 8000, defaultPeriod100ms: 50 },
 
-  render: { frameIntervalMs: 40, timelineMax: 200, logMaxLines: 400, logHexLimit: 56 },
+  render: { frameIntervalMs: 40, timelineMax: 200, logMaxLines: 400, logHexLimit: 56,
+            trailMax: 300 },
 
   defaults: {
-    mountMm: 2500,          // 页面初值（演示推荐 0x25=2500）；连上后按回读校正
-    period100ms: 50,        // 出厂默认 50 = 5 s
-    triggerMode: 0,
-    rangeMm: 3000,          // 0x27 出厂默认 ±3000 mm
-    /* 「应用演示推荐参数」的 5 条 SET（任务书口径，顺序即下发顺序） */
-    preset: { reportFreq100ms: 10, detectDelayS: 3, triggerMode: 0, mountMm: 2500, debugMode: 1 }
+    mountMm: 2500,          // 页面初值（= 演示推荐 0x25）；连上后按回读校正。协议未给 0x25 默认值
+    period100ms: 50,        // 协议默认 50 = 5 s
+    triggerMode: 0,         // 协议默认 0 = 正常运动
+    rangeMm: 3000,          // 0x27 协议默认 ±3000 mm
+    /* 「应用演示推荐参数」的 5 条 SET（事实包 §6，顺序即下发顺序） */
+    preset: { reportFreq100ms: 10, lockTimeS: 1, triggerMode: 0, mountMm: 2500, rfMode: 1 }
   }
 };
 // ==== CFG-END ====
 
 /* ==========================================================================
- * 二、CORE-BEGIN —— 纯逻辑（校验和 / 转义 / 组帧 / 双口径帧解析 / 0x81 与 0x80
- *    解析 / 参数解码 / 只读计划 / 演示推荐 SET 计划 / 静默口径 / 自测用例）。
- *    这一段无任何 DOM 依赖，被 scripts/edv163_presence_selftest.mjs 用正则整段抽出，
+ * 二、CORE-BEGIN —— 纯逻辑（校验和 / 组帧 / 增量切帧 / 0x81 解析 /
+ *    参数编解码 / 只读计划 / 演示推荐 SET 计划 / 静默口径）。
+ *    这一段无任何 DOM 依赖，被 scripts/edv163_presence_selftest.mjs 抽取，
  *    在 Node 沙箱里用 new Function 运行 —— 页面「页内自测」与 Node 自测跑的是同一份实现。
  * ========================================================================== */
 // ==== CORE-BEGIN ====
 const P = CFG.proto;
 
 /**
- * 校验和（协议 §2）：自帧头 0x45 起至 value 末字节逐字节累加，对 256 求余。
- * 一律按【转义前 / 还原后】的字节序列计算，与线上字节数无关。
+ * 校验和（协议 §2）：自帧头 0x45 起至 Value 末字节逐字节累加，对 256 求余。
+ * 等价写法：sum(data[0:-1]) & 0xFF，与帧内最后一个字节比较。
  */
 function checksum(bytes, from, to) {
   const a = from === undefined ? 0 : from;
@@ -667,132 +688,50 @@ function checksum(bytes, from, to) {
   return s & 0xFF;
 }
 
-/**
- * 转义（协议 §1）：正文 0x0A → 09 01、0x09 → 09 00。
- * 只作用于「帧头..校验和」整段；帧尾 0x0A 由调用方在转义之后追加，不参与转义。
- */
-function escapeBytes(bytes) {
-  const out = [];
-  for (let i = 0; i < bytes.length; i++) {
-    const v = bytes[i];
-    if (v === P.tail) { out.push(P.esc, 0x01); }
-    else if (v === P.esc) { out.push(P.esc, 0x00); }
-    else { out.push(v); }
-  }
-  return Uint8Array.from(out);
-}
-
-/**
- * 还原（接收方向）：09 01 → 0x0A、09 00 → 0x09；0x09 后跟其它字节 = 非法转义。
- * 返回 { ok:true, bytes, escaped } 或 { ok:false, error, at }
- */
-function unescapeBytes(escaped) {
-  const out = [];
-  let escapedCount = 0;
-  for (let i = 0; i < escaped.length; i++) {
-    const v = escaped[i];
-    if (v !== P.esc) { out.push(v); continue; }
-    if (i + 1 >= escaped.length) return { ok: false, error: '末尾孤立转义字节 0x09', at: i };
-    const nx = escaped[i + 1];
-    if (nx === 0x00) { out.push(0x09); escapedCount++; i++; }
-    else if (nx === 0x01) { out.push(0x0A); escapedCount++; i++; }
-    else return { ok: false, error: '非法转义序列 0x09 0x' + hex2(nx), at: i };
-  }
-  return { ok: true, bytes: Uint8Array.from(out), escaped: escapedCount };
-}
-
 let _msgIdCounter = 0;
 function nextMsgId() {
-  _msgIdCounter = (_msgIdCounter + 1) % 0xFFF1;   // 协议：0 ~ 0xfff0 循环
+  _msgIdCounter = (_msgIdCounter + 1) % (P.msgIdMax + 1);   // 协议：0 ~ 0xfff0 循环
   return _msgIdCounter;
 }
 
-/** 主机→模组帧载荷上限（12 + N ≤ 50 → N ≤ 38），供界面提示与自测断言 */
-function maxHostPayloadLen() { return P.maxHostFrameLength - P.minFrameLength; }
-
 /**
  * 构造帧（协议 §2）：
- *   帧头2 | 长度2(转义前整包) | msgid2 | op1 | type1 | tlv_len2 | value N | 校验和1 | 帧尾0A
- *   顺序：算长度与校验和 → 追加校验和 → 对「帧头..校验和」整段转义 → 追加帧尾
- *
- * ⚠ 50 B 上限只约束【主机→模组】方向（协议原文「雷达接收数据最长为 50BYTE」），
- *   且按**线上实际字节**算 —— 转义会膨胀（正文每出现 1 个 0x09/0x0A 就多 1 B），
- *   所以「转义前 12+N」与「转义后线上字节数」两道都要过。
- *   模组→主机方向不受此限（0x80 调试数据 80 B 载荷 → 92 B 整帧），故设备侧帧用
- *   createDeviceFrame（deviceSide:true 跳过 50 B 硬校验，只受 256 B 实现护栏约束）。
+ *   帧头2 | 长度2 = 11 + N | msgid2 | op1 | type1 | len2 = N | Value N | 校验和1
+ * 没有帧尾，不做字节填充 —— Value 里的 0x09 / 0x0A 原样放进帧里，长度字段照样是 11 + N。
+ * 长度域与校验和都由本函数算出来，调用方永不手写校验和。
  */
-function packFrame(op, type, data, msgId, opts) {
+function createFrame(op, type, data, msgId) {
   if (!Number.isInteger(op) || op < 0 || op > 0xFF) throw new Error('OP 必须是单字节无符号整数');
   if (!Number.isInteger(type) || type < 0 || type > 0xFF) throw new Error('TYPE 必须是单字节无符号整数');
   const d = !data ? new Uint8Array(0)
     : (data instanceof Uint8Array ? data : Uint8Array.from(data));
   const total = P.minFrameLength + d.length;
   if (total > P.maxFrameLength) {
-    throw new Error('帧过长：12 + ' + d.length + ' = ' + total + ' B（实现护栏 ' +
+    throw new Error('帧过长：11 + ' + d.length + ' = ' + total + ' B（实现护栏 ' +
       P.maxFrameLength + ' B，非协议条款）');
-  }
-  const deviceSide = !!(opts && opts.deviceSide);
-  if (!deviceSide && total > P.maxHostFrameLength) {
-    throw new Error('拒发：12 + ' + d.length + ' = ' + total + ' B > ' +
-      P.maxHostFrameLength + ' B（协议规定主机→模组帧最长 ' + P.maxHostFrameLength +
-      ' B，超过部分模组不识别；屏蔽区 0x29 每帧最多 2 个）');
   }
   const id = (msgId === undefined || msgId === null) ? nextMsgId() : (msgId & 0xFFFF);
 
-  const raw = new Uint8Array(total);
-  raw[0] = P.header[0]; raw[1] = P.header[1];
-  raw[2] = (total >> 8) & 0xFF; raw[3] = total & 0xFF;
-  raw[4] = (id >> 8) & 0xFF; raw[5] = id & 0xFF;
-  raw[6] = op; raw[7] = type;
-  raw[8] = (d.length >> 8) & 0xFF; raw[9] = d.length & 0xFF;
-  raw.set(d, 10);
-  raw[total - 2] = checksum(raw, 0, total - 2);   // 校验和：帧头..value 末
-  raw[total - 1] = P.tail;
-
-  /* 转义只作用于「帧头..校验和」（total-1 字节），帧尾不转义。
-     注意长度域、msgid、tlv_len 也在转义范围内 —— tlv_len 低字节常是 0x09，
-     所以一条 9 B 载荷的 0x81 帧通常就有 2~3 处转义，而不是「只有 value 才转义」。 */
-  const body = escapeBytes(raw.subarray(0, total - 1));
-  const framed = new Uint8Array(body.length + 1);
-  framed.set(body, 0);
-  framed[body.length] = P.tail;
-
-  /* 第二道 50 B 闸：协议约束的是**线上收到的字节数**（雷达按线上字节计数、超过 50 BYTE 不识别），
-     转义会膨胀，所以转义前合规（12+N ≤ 50）不等于线上合规：正文里每 1 个 0x09/0x0A 就多 1 B。 */
-  if (!deviceSide && framed.length > P.maxHostFrameLength) {
-    throw new Error('拒发（转义后超限）：转义前 12 + ' + d.length + ' = ' + total +
-      ' B 未超限，但转义后线上 ' + framed.length + ' B > ' + P.maxHostFrameLength +
-      ' B（正文含 ' + (framed.length - total) + ' 处 0x09/0x0A，每处转义多 1 B；' +
-      '协议规定主机→模组帧最长 ' + P.maxHostFrameLength + ' B 按线上字节计）');
-  }
-  return framed;
-}
-
-/** 主机→模组帧（转义前 12+N ≤ 50 B **且** 转义后线上字节数 ≤ 50 B，任一超限直接抛错拒发） */
-function createFrame(op, type, data, msgId) {
-  return packFrame(op, type, data, msgId, null);
-}
-
-/** 模组→主机方向的帧（0x80 / 0x81 等）：不受 50 B 主机上限约束，仅供自测与注入样例使用 */
-function createDeviceFrame(op, type, data, msgId) {
-  return packFrame(op, type, data, msgId, { deviceSide: true });
+  const out = new Uint8Array(total);
+  out[0] = P.header[0]; out[1] = P.header[1];
+  out[2] = (total >> 8) & 0xFF; out[3] = total & 0xFF;
+  out[4] = (id >> 8) & 0xFF; out[5] = id & 0xFF;
+  out[6] = op; out[7] = type;
+  out[8] = (d.length >> 8) & 0xFF; out[9] = d.length & 0xFF;
+  out.set(d, 10);
+  out[total - 1] = checksum(out, 0, total - 1);   // 帧头..Value 末（不含校验和自身）
+  return out;
 }
 
 /**
- * EDV163 帧解析器（接收方向）—— 双口径自适应，这是本页最关键的一段。
+ * EDV163 V1.4 帧解析器（接收方向，单一口径）。
  *
- * 为什么需要双口径：协议只对【发送】方向写明「正文 0x0A → 09 01、0x09 → 09 00」，
- * 对【接收】方向是否转义并未明确。若设备上报也做了转义，正文里的 0x0A 一定不会是裸字节；
- * 若设备上报不做转义，正文里就可能出现裸 0x0A（此时「遇到 0x0A 就切帧」必然错位）。
- * 因此同一条候选帧分别按两种口径还原：
- *   口径 A「未转义」：线上字节即还原后字节，直接按长度域切片；
- *   口径 B「已转义」：逐字节还原 09 01/09 00，再按还原后的长度域切片。
- * 取校验和校验通过的那一个；两者结论不一致且无法裁定时计入「口径歧义」并在统计条显示。
- *
- * 三条不可妥协的原则：
- *   ① 绝不「遇到 0x0A 就切帧」——一律按长度字段切 + 校验和验证；
- *   ② 半包/粘包都要处理：字节流喂进来，完整帧才产出，剩余留到下次；
- *   ③ 任何非法形态只丢 1 个字节重同步，不整段 flush，这样坏帧之后还能捕获下一帧。
+ * 四条不可妥协的原则：
+ *   ① 绝不靠「再找一个帧头」切帧 —— 0x01 Report 的 Value 里就含 45 44
+ *      （45 44 00 0E 00 01 A2 01 00 03 00 45 44 C7），一律按长度字段切；
+ *   ② 半包保留等待，粘包一次全出：字节流喂进来，完整帧才产出；
+ *   ③ 长度不在 11..256（实现护栏）判非法，**只丢 1 个字节**再重新找帧头；
+ *   ④ 帧头前的无归属字节计数并丢弃，不整段 flush，坏帧之后仍能捕获下一帧。
  */
 class EdvParser {
   constructor() {
@@ -801,21 +740,14 @@ class EdvParser {
     this.errors = [];
     this.stats = {
       goodFrames: 0,
-      framesEscaped: 0,           // 按「已转义」口径还原成功的帧数（含转义序列）
-      framesRaw: 0,               // 按「未转义」口径解出的帧数（正文里没有转义序列）
-      framesRawOnly: 0,           // 只能用「未转义」口径解出（正文含裸 0x0A/0x09）
-      ambiguous: 0,               // 口径歧义：两口径结论不一致且无法裁定
-      badLength: 0,               // 长度域不在 12~256
+      badLength: 0,               // 长度域不在 11~256
       badChecksum: 0,             // 校验和错
-      badTrailer: 0,              // 帧尾缺失（收满声明长度后不是 0x0A）
-      truncated: 0,               // 帧尾提前出现（正文不足声明长度）
-      badEscape: 0,               // 非法转义序列（统计条「转义错误」）
-      badTlv: 0,                  // tlv_len ≠ 长度 − 12
-      badPayload: 0,              // 0x81 / 0x80 载荷口径不符
-      noiseBytes: 0,              // 被重同步逻辑丢弃的字节数
+      badTlv: 0,                  // len 字段 ≠ 声明长度 − 11
+      badPayload: 0,              // 0x81 载荷长度 ≠ 9
+      noiseBytes: 0,              // 帧头前被丢弃的无归属字节数
       attributedBytes: 0,         // 已归属字节（被完好帧吃掉的线上字节数）
-      escapedBytes: 0,            // 累计还原掉的转义序列个数
-      badDetail: ''              // 最近一次坏帧原因（界面展示）
+      resyncs: 0,                 // 帧头重同步次数（丢噪声块 / 坏帧后丢 1 字节）
+      badDetail: ''               // 最近一次坏帧原因（界面展示）
     };
   }
 
@@ -824,14 +756,11 @@ class EdvParser {
   /** 坏帧总数（统计条「坏帧」） */
   get badFrames() {
     const s = this.stats;
-    return s.badLength + s.badChecksum + s.badTrailer + s.truncated + s.badEscape +
-           s.badTlv + s.badPayload;
+    return s.badLength + s.badChecksum + s.badTlv + s.badPayload;
   }
 
   /** 已归属字节（被完好帧吃掉的线上字节数） */
-  get frameBytes() {
-    return this.stats.attributedBytes || 0;
-  }
+  get frameBytes() { return this.stats.attributedBytes || 0; }
 
   /** 缓冲区里尚未判定完的字节（半包），不计入「未归属」 */
   get pendingBytes() { return this.len; }
@@ -881,27 +810,38 @@ class EdvParser {
       if (h < 0) {
         /* 没有帧头：末字节可能是下一帧的首字节 0x45，保留它 */
         if (this.buf[this.len - 1] === P.header[0]) {
-          this.stats.noiseBytes += (this.len - 1 - pos);
+          const n = this.len - 1 - pos;
+          if (n > 0) { this.stats.noiseBytes += n; this.stats.resyncs++; }
           pos = this.len - 1;
         } else {
-          this.stats.noiseBytes += (this.len - pos);
+          const n = this.len - pos;
+          if (n > 0) { this.stats.noiseBytes += n; this.stats.resyncs++; }
           pos = this.len;
         }
         break;
       }
-      if (h > pos) { this.stats.noiseBytes += (h - pos); pos = h; }
+      if (h > pos) {
+        const n = h - pos;
+        this.stats.noiseBytes += n;
+        this.stats.resyncs++;
+        const msg = '帧头前 ' + n + ' 个无归属字节已丢弃（帧头重同步）';
+        this.stats.badDetail = msg;
+        this.errors.push(msg);
+        pos = h;
+      }
 
       const r = this._decodeAt(pos);
       if (r.status === 'need-more') break;
-      if (r.status === 'bad') { pos += (r.skip || 1); continue; }
+      if (r.status === 'bad') {
+        this._bad(r.kind, r.skip, r.detail);      // 记账：坏帧分类计数 + 最近原因
+        pos += (r.skip || 1);
+        this.stats.resyncs++;
+        continue;
+      }
 
       pos = r.next;
       this.stats.goodFrames++;
-      this.stats.attributedBytes = (this.stats.attributedBytes || 0) + r.frame.wireLen;
-      this.stats.escapedBytes += r.frame.escaped;
-      if (r.frame.escaped > 0) this.stats.framesEscaped++;
-      else this.stats.framesRaw++;
-      if (r.frame.rawOnly) this.stats.framesRawOnly++;
+      this.stats.attributedBytes += r.frame.wireLen;
       frames.push(r.frame);
     }
     this._drop(pos);
@@ -914,291 +854,100 @@ class EdvParser {
     return { status: 'bad', skip: skip || 1, kind };
   }
 
-  /**
-   * 口径 A「未转义」：线上字节 = 还原后字节。
-   * 长度域直接取线上第 3、4 字节；切片后校验和与 tlv_len 都对上才算通过。
-   */
-  _tryRaw(pos) {
+  /** 在 pos 处按「帧头 + 长度字段」尝试切一帧；半包返回 need-more，坏帧返回 bad 且只丢 1 字节 */
+  _decodeAt(pos) {
     const b = this.buf;
     if (pos + 4 > this.len) return { status: 'need-more' };
     const lenField = (b[pos + 2] << 8) | b[pos + 3];
     if (lenField < P.minFrameLength || lenField > P.maxFrameLength) {
       return { status: 'bad', kind: 'badLength', skip: 1,
                detail: '非法帧长度 ' + lenField + '（合法 ' + P.minFrameLength + '~' +
-                       P.maxFrameLength + '），丢弃 1 字节重同步' };
+                       P.maxFrameLength + '，11+N 口径），丢弃 1 字节重同步' };
     }
     if (pos + lenField > this.len) return { status: 'need-more' };
-    if (b[pos + lenField - 1] !== P.tail) {
-      return { status: 'bad', kind: 'badTrailer', skip: 1,
-               detail: '帧尾缺失：收满 ' + lenField + 'B 后是 0x' + hex2(b[pos + lenField - 1]) +
-                       '（应为 0x0A）' };
-    }
-    const raw = b.slice(pos, pos + lenField - 1);      // 帧头..校验和
-    const expectCk = raw[raw.length - 1];
-    if (checksum(raw, 0, raw.length - 1) !== expectCk) {
-      return { status: 'bad', kind: 'badChecksum', skip: 1,
-               detail: '校验和错误（未转义口径）：计算 0x' + hex2(checksum(raw, 0, raw.length - 1)) +
-                       '，帧内 0x' + hex2(expectCk) };
-    }
-    const tlvLen = (raw[8] << 8) | raw[9];
-    if (tlvLen !== lenField - P.minFrameLength) {
-      return { status: 'bad', kind: 'badTlv', skip: 1,
-               detail: 'TLV 长度不符：声明 ' + tlvLen + 'B，按帧长应为 ' +
-                       (lenField - P.minFrameLength) + 'B' };
-    }
-    return { status: 'good', next: pos + lenField, wireLen: lenField,
-             body: raw, escapedCount: 0, rawOnly: false };
-  }
 
-  /**
-   * 口径 B「已转义」：逐字节还原 09 01/09 00，按还原后的长度域切片。
-   * 半包时返回 need-more（例如转义序列只到了 0x09）；非法转义立即报错。
-   */
-  _tryEscaped(pos) {
-    const b = this.buf, end = this.len;
-    const out = [];
-    let i = pos;
-    let lenField = -1;
-    let escaped = 0;
-
-    while (lenField < 0 || out.length !== lenField - 1) {
-      if (i >= end) return { status: 'need-more' };
-      const byte = b[i];
-      if (byte === P.esc) {
-        if (i + 1 >= end) return { status: 'need-more' };
-        const nx = b[i + 1];
-        if (nx === 0x00) { out.push(0x09); i += 2; escaped++; }
-        else if (nx === 0x01) { out.push(0x0A); i += 2; escaped++; }
-        else {
-          return { status: 'bad', kind: 'badEscape', skip: 1,
-                   detail: '非法转义序列 09 ' + hex2(nx) + '（0x09 后应为 00/01）' };
-        }
-      } else if (byte === P.tail && lenField >= 0 && out.length < lenField - 1) {
-        /* 已转义口径下正文里不该出现裸 0x0A：声明长度还没填满就遇到它 → 判截断帧 */
-        return { status: 'bad', kind: 'truncated', skip: (i - pos) + 1,
-                 detail: '帧尾 0x0A 提前出现：已还原 ' + out.length + 'B，声明 ' + lenField + 'B' };
-      } else {
-        out.push(byte); i++;
-      }
-
-      if (lenField < 0 && out.length >= 4) {
-        const L = (out[2] << 8) | out[3];
-        if (L < P.minFrameLength || L > P.maxFrameLength) {
-          return { status: 'bad', kind: 'badLength', skip: 1,
-                   detail: '非法帧长度 ' + L + '（合法 ' + P.minFrameLength + '~' +
-                           P.maxFrameLength + '），丢弃 1 字节重同步' };
-        }
-        lenField = L;
-      }
-    }
-
-    if (i >= end) return { status: 'need-more' };
-    if (b[i] !== P.tail) {
-      return { status: 'bad', kind: 'badTrailer', skip: 1,
-               detail: '帧尾缺失：收满 ' + (lenField - 1) + 'B（帧头..校验和）后是 0x' +
-                       hex2(b[i]) + '（应为 0x0A）' };
-    }
-
-    const raw = Uint8Array.from(out);
-    const expectCk = raw[lenField - 2];
-    const gotCk = checksum(raw, 0, lenField - 2);
+    const body = b.slice(pos, pos + lenField - 1);        // 帧头..Value 末
+    const expectCk = b[pos + lenField - 1];
+    const gotCk = checksum(body, 0, body.length);
     if (gotCk !== expectCk) {
       return { status: 'bad', kind: 'badChecksum', skip: 1,
-               detail: '校验和错误（已转义口径）：计算 0x' + hex2(gotCk) +
-                       '，帧内 0x' + hex2(expectCk) };
+               detail: '校验和错误：计算 0x' + hex2(gotCk) + '，帧内 0x' + hex2(expectCk) +
+                       '（长度 ' + lenField + 'B）' };
     }
-    const tlvLen = (raw[8] << 8) | raw[9];
+    const tlvLen = (body[8] << 8) | body[9];
     if (tlvLen !== lenField - P.minFrameLength) {
       return { status: 'bad', kind: 'badTlv', skip: 1,
-               detail: 'TLV 长度不符：声明 ' + tlvLen + 'B，按帧长应为 ' +
+               detail: 'len 字段与帧长不符：len=' + tlvLen + 'B，按帧长应为 ' +
                        (lenField - P.minFrameLength) + 'B' };
     }
-    return { status: 'good', next: i + 1, wireLen: (i + 1) - pos,
-             body: raw, escapedCount: escaped, rawOnly: false };
-  }
-
-  /**
-   * 双口径裁定：
-   *   · 两口径都通过且字节序列一致（正文无转义）→ 无歧义；
-   *   · 两口径都通过但结果不同（正文含转义序列，未转义口径「碰巧」也过了校验）→ 口径歧义，
-   *     采用「已转义」口径（协议规定正文必须转义），并计数；
-   *   · 只有一口径通过 → 采用它，另一口径自适应丢弃；
-   *   · 一口径 NEED_MORE、另一口径失败 → **一律等下一次 feed**（半包优先，不提前定案）；
-   *     尤其是「未转义未收齐 + 已转义撞到非法转义」这一组合，绝不丢弃、绝不误计 badEscape；
-   *   · 两口径都失败且原因不同 → 口径歧义（都不被识别）；原因相同 → 按该原因计一次坏帧。
-   */
-  _decodeAt(pos) {
-    const raw = this._tryRaw(pos);
-    const esc = this._tryEscaped(pos);
-    let picked = null;
-
-    if (raw.status === 'good' && esc.status === 'good') {
-      const same = raw.wireLen === esc.wireLen && bytesEqual(raw.body, esc.body);
-      if (same) picked = { r: esc, frameBasis: esc.escapedCount > 0 ? 'escaped' : 'raw' };
-      else {
-        this.stats.ambiguous++;
-        this.stats.badDetail = '口径歧义：同一条候选帧「未转义」「已转义」两种还原都通过校验和';
-        this.errors.push('口径歧义：两种还原口径都通过校验和（线上 ' + raw.wireLen + 'B / 还原 ' +
-          esc.wireLen + 'B），采用已转义口径');
-        picked = { r: esc, frameBasis: 'escaped' };
+    return {
+      status: 'good',
+      next: pos + lenField,
+      frame: {
+        msgId: (body[4] << 8) | body[5],
+        op: body[6],
+        type: body[7],
+        data: body.slice(10, 10 + tlvLen),
+        lenField,
+        tlvLen,
+        checksum: body[body.length - 1],
+        wireLen: lenField,
+        raw: this.buf.slice(pos, pos + lenField)     // 线上原始字节，仅用于日志
       }
-    } else if (esc.status === 'good') {
-      picked = { r: esc, frameBasis: esc.escapedCount > 0 ? 'escaped' : 'raw' };
-    } else if (raw.status === 'good') {
-      if (esc.status !== 'need-more') {
-        /* 设备上报未做转义：正文里的裸 0x0A/0x09 让「已转义」口径错位，按未转义口径解出 */
-        picked = { r: raw, frameBasis: 'raw' };
-        raw.rawOnly = true;
-      }
-    }
-
-    if (picked) {
-      const r = picked.r;
-      const body = r.body;
-      const lenField = body.length + 1;
-      const tlvLen = (body[8] << 8) | body[9];
-      return {
-        status: 'good',
-        next: r.next,
-        frame: {
-          msgId: (body[4] << 8) | body[5],
-          op: body[6],
-          type: body[7],
-          data: body.slice(10, 10 + tlvLen),
-          lenField,
-          tlvLen,
-          checksum: body[body.length - 1],
-          escaped: r.escapedCount,
-          basis: picked.frameBasis,
-          rawOnly: !!r.rawOnly,
-          wireLen: r.wireLen,
-          raw: this.buf.slice(pos, r.next)     // 线上原始字节（含转义与帧尾），仅用于日志
-        }
-      };
-    }
-
-    /* 两口径都没解出：先判半包 */
-    if (raw.status === 'need-more' && esc.status === 'need-more') return { status: 'need-more' };
-    /* 一口径已通过、另一口径还在等字节（只可能是半包）→ 等下一次 feed，避免误判 */
-    if (raw.status === 'good' || esc.status === 'good') return { status: 'need-more' };
-    if (raw.status === 'need-more' && esc.status === 'bad') {
-      /* 未转义口径只是「还缺字节」（NEED_MORE），**不能**用已转义口径的失败来定案：
-         设备若不是按转义规则上报（正文里出现裸 09 xx），已转义口径必然会在 09 xx 处判
-         badEscape，而合法帧此刻只是还没收齐。若在此处定案，就会把一条合法未转义帧
-         丢掉 1 字节并误计「转义错误」。
-         → 只有未转义口径已**明确失败**（不是 NEED_MORE）时，才允许用转义失败去定案/重同步；
-           未转义口径仍在等字节时，一律继续等后续字节：不丢弃、不计 badEscape。
-         等待是有界的：未转义口径的长度域合法区间为 12~256 B，最多再等 256 B 就必然定案。 */
-      return { status: 'need-more' };
-    }
-    if (esc.status === 'need-more' && raw.status === 'bad') {
-      if (raw.kind === 'badLength') return this._bad('badLength', raw.skip, raw.detail);
-      return { status: 'need-more' };
-    }
-
-    const kRaw = raw.kind, kEsc = esc.kind;
-    if (kRaw === kEsc) return this._bad(kRaw, raw.skip, raw.detail);
-    /* 两口径给出不同结论且都不通过 → 口径歧义（都不被识别），按已转义口径的原因计坏帧 */
-    this.stats.ambiguous++;
-    this.errors.push('口径歧义：两种口径都不被识别（未转义 ' + kRaw + ' / 已转义 ' + kEsc + '）');
-    return this._bad(kEsc, esc.skip || 1, esc.detail + '（两口径结论不一致，已计入口径歧义）');
+    };
   }
 }
 
-function bytesEqual(a, b) {
-  if (!a || !b || a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
-  return true;
+/** 未归属字节 = 总字节 − 已归属字节 − 半包（帧头前噪声 + 坏帧吞掉的字节） */
+function unattributedBytes(parser, totalBytes) {
+  return Math.max(0, totalBytes - parser.frameBytes - parser.pendingBytes);
 }
 
 /**
- * 解析 0x81 上报载荷（op=0xA3 主动上报）。
- * 协议 §3：每通道 9 B，无 count 前缀（通道数由 0x13 设定）：
+ * 解析 0x81 上报载荷（op=0xA3 主动上报）—— 协议 §3：**固定 9 B 单目标**。
  *   [1B] presence 0 无人 / 1 有人
  *   [1B] state    0 无人 / 1 静止 / 2 运动
  *   [1B] direction 0 静止 / 1 靠近 / 2 远离
- *   [2B] x int16 大端 mm   [2B] y int16 大端 mm   [2B] z int16 大端 mm
- * tlv_len % 9 !== 0 → 判「载荷口径异常」，并显式提示可能是旧 7 B / 8 B 口径固件；
- * tlv_len / 9 越出 1~4 通道 → 同样判「载荷口径异常」（协议 §3：0x13 检测通道数量 1-4）；
- * 绝不按 7 或 8 去猜（猜错就是静默渲染垃圾数据）。
+ *   [2B] x int16 大端有符号 mm
+ *   [2B] y int16 大端有符号 mm
+ *   [2B] z uint16 大端**无符号** mm
+ * V1.4 已删除 0x13 检测通道数量 → 没有「通道数 = tlv_len/9」这套口径；
+ * 长度 ≠ 9 一律判「载荷长度异常」并把原始十六进制打出来，绝不按 7 B / 8 B / 多通道猜。
  */
 function parseReport81(data) {
-  if (!data || data.length === 0) return { ok: false, error: '0x81 载荷为空' };
-  const tlvLen = data.length;
-  if (tlvLen % P.ch81Stride !== 0) {
-    let hint = '';
-    if (tlvLen % 8 === 0) hint = '；' + tlvLen + 'B 能被 8 整除 → 可能是旧 7 B/8 B 口径固件';
-    else if (tlvLen % 7 === 0) hint = '；' + tlvLen + 'B 能被 7 整除 → 可能是旧 7 B/8 B 口径固件';
+  const n = data ? data.length : 0;
+  if (!data || n === 0) return { ok: false, error: '0x81 载荷为空', rawHex: '' };
+  if (n !== P.report81Len) {
     return {
       ok: false,
-      legacyHint: true,
-      error: '载荷口径异常：' + tlvLen + 'B 不是 9 的整数倍（每通道 9 B = ' +
-             '有人/状态/方向 各 1B + x/y/z 各 2B）' + hint
+      payloadBad: true,
+      rawHex: bytesToHex(data),
+      error: '载荷长度异常：' + n + 'B ≠ 9B（V1.4 固定 9 B 单目标，无通道概念）原始数据 ' +
+             bytesToHex(data)
     };
   }
-  const count = tlvLen / P.ch81Stride;
-  if (count < P.ch81CountMin || count > P.ch81CountMax) {
-    return {
-      ok: false,
-      countOutOfRange: true,
-      error: '载荷口径异常：通道数 ' + count + '（' + tlvLen + 'B / 每通道 ' + P.ch81Stride +
-             'B）越出协议允许的 ' + P.ch81CountMin + '~' + P.ch81CountMax +
-             ' 通道（协议 §3：检测通道数量 0x13 取值 1-4）'
-    };
-  }
-  const channels = [];
-  for (let k = 0; k < count; k++) {
-    const o = k * P.ch81Stride;
-    channels.push({
-      index: k,
-      presence: data[o],
-      state: data[o + 1],
-      direction: data[o + 2],
-      x: readInt16BE(data, o + 3),
-      y: readInt16BE(data, o + 5),
-      z: readInt16BE(data, o + 7)
-    });
-  }
-  return { ok: true, count, stride: P.ch81Stride, channels };
+  return {
+    ok: true,
+    stride: P.report81Len,
+    rawHex: bytesToHex(data),
+    target: {
+      presence: data[0],
+      state: data[1],
+      direction: data[2],
+      x: readInt16BE(data, 3),
+      y: readInt16BE(data, 5),
+      z: readUint16BE(data, 7)
+    }
+  };
 }
 
-/**
- * 解析 0x80 调试数据：80 B = 1~40 各距离门运动能量、41~80 各距离门静止能量（0-100）。
- * 需先 SET 0x1E=1 打开调试模式（协议未明写、待实测）→ 页面必须优雅降级：
- * 收不到 0x80 时能量区显示「未收到能量帧 · 需 SET 0x1E=1 开调试模式（待实测）」，不报错、不卡住。
- */
-function parseReport80(data) {
-  if (!data || data.length !== P.ch80Len) {
-    return { ok: false, error: '0x80 载荷口径异常：' + (data ? data.length : 0) + 'B ≠ ' + P.ch80Len + 'B' };
-  }
-  const motion = [];
-  const still = [];
-  for (let i = 0; i < P.ch80Gates; i++) {
-    motion.push(data[i] > 100 ? 100 : data[i]);
-    still.push(data[i + 40] > 100 ? 100 : data[i + 40]);
-  }
-  return { ok: true, gates: P.ch80Gates, motion, still };
-}
-
-/** 由能量数组反向构造 0x80 载荷（注入样例与自测用，格式与解析器严格对称） */
-function buildReport80Payload(motion, still) {
-  const out = new Uint8Array(P.ch80Len);
-  for (let i = 0; i < P.ch80Gates; i++) {
-    out[i] = clampByte(motion && motion[i] !== undefined ? motion[i] : 0);
-    out[i + 40] = clampByte(still && still[i] !== undefined ? still[i] : 0);
-  }
-  return out;
-}
-
-function clampByte(v) { return Math.max(0, Math.min(255, Math.round(Number(v) || 0))); }
-
-/** 由通道表反向构造 0x81 载荷（注入样例与自测用，与 parseReport81 严格对称） */
-function buildReport81Payload(channels) {
+/** 由单目标对象反向构造 0x81 载荷（注入样例与自测用，与 parseReport81 严格对称） */
+function buildReport81Payload(t) {
   const out = [];
-  for (const c of channels) {
-    out.push(c.presence & 0xFF, c.state & 0xFF, c.direction & 0xFF);
-    pushInt16BE(out, c.x || 0); pushInt16BE(out, c.y || 0); pushInt16BE(out, c.z || 0);
-  }
+  out.push(t.presence & 0xFF, t.state & 0xFF, t.direction & 0xFF);
+  pushInt16BE(out, t.x || 0);
+  pushInt16BE(out, t.y || 0);
+  pushUint16BE(out, t.z || 0);          // z 是无符号 uint16
   return Uint8Array.from(out);
 }
 
@@ -1216,7 +965,6 @@ function readInt16BE(bytes, at) {
   const v = ((bytes[at] << 8) | bytes[at + 1]) & 0xFFFF;
   return v > 32767 ? v - 65536 : v;
 }
-function readInt8(bytes, at) { return bytes[at] > 127 ? bytes[at] - 256 : bytes[at]; }
 function asciiOf(bytes) {
   let s = '';
   for (let i = 0; i < bytes.length; i++) {
@@ -1225,86 +973,160 @@ function asciiOf(bytes) {
   }
   return s;
 }
+function encodeUint16(v) { const a = []; pushUint16BE(a, v); return Uint8Array.from(a); }
+function encodeInt16(v) { const a = []; pushInt16BE(a, v); return Uint8Array.from(a); }
+
+/**
+ * 0x27 检测范围编解码：8 × int16 大端，顺序 = 运动 X min/max、运动 Y min/max、
+ * 存在 X min/max、存在 Y min/max（单位 mm，±5000）。
+ */
+function parseDetectRange(data) {
+  if (!data || data.length !== P.detectRangeLen) {
+    return { ok: false, error: '0x27 长度异常：' + (data ? data.length : 0) + 'B ≠ 16B' };
+  }
+  const box = o => ({ minX: readInt16BE(data, o), maxX: readInt16BE(data, o + 2),
+                      minY: readInt16BE(data, o + 4), maxY: readInt16BE(data, o + 6) });
+  return { ok: true, motion: box(0), presence: box(8) };
+}
+function packDetectRange(r) {
+  const out = [];
+  for (const b of [r.motion, r.presence]) {
+    pushInt16BE(out, b.minX); pushInt16BE(out, b.maxX);
+    pushInt16BE(out, b.minY); pushInt16BE(out, b.maxY);
+  }
+  return Uint8Array.from(out);
+}
+
+/**
+ * 0x29 屏蔽区编解码：1B 数量 0~10 + 每区 13B（id 1~10 + X min/max + Y min/max + Z min/max，各 int16）。
+ * 数量为 0 时 Value 只有 1 字节（= 清空屏蔽区）。
+ */
+function parseMaskZones(data) {
+  if (!data || data.length === 0) return { ok: false, error: '0x29 载荷为空' };
+  const count = data[0];
+  if (count > P.maskMax) {
+    return { ok: false, error: '0x29 数量异常：' + count + ' > ' + P.maskMax };
+  }
+  const need = 1 + count * P.maskStride;
+  if (data.length !== need) {
+    return { ok: false, error: '0x29 长度异常：' + data.length + 'B，按数量 ' + count +
+                               ' 应为 ' + need + 'B' };
+  }
+  const zones = [];
+  for (let k = 0; k < count; k++) {
+    const o = 1 + k * P.maskStride;
+    zones.push({
+      id: data[o],
+      minX: readInt16BE(data, o + 1), maxX: readInt16BE(data, o + 3),
+      minY: readInt16BE(data, o + 5), maxY: readInt16BE(data, o + 7),
+      minZ: readInt16BE(data, o + 9), maxZ: readInt16BE(data, o + 11)
+    });
+  }
+  return { ok: true, count, zones };
+}
+function packMaskZones(zones) {
+  const list = zones || [];
+  if (list.length > P.maskMax) throw new Error('屏蔽区最多 ' + P.maskMax + ' 个');
+  const out = [list.length & 0xFF];
+  for (const z of list) {
+    out.push(z.id & 0xFF);
+    pushInt16BE(out, z.minX); pushInt16BE(out, z.maxX);
+    pushInt16BE(out, z.minY); pushInt16BE(out, z.maxY);
+    pushInt16BE(out, z.minZ); pushInt16BE(out, z.maxZ);
+  }
+  return Uint8Array.from(out);
+}
 
 /**
  * 参数回读值解码（只用于展示；未回读的显示「超时未回答」，绝不猜值）。
- * 返回 { text, ok, raw }
+ * 返回 { text, ok, value }。长度与协议 §2 的表严格对齐。
  */
 function decodeParam(type, data) {
   if (!data) return { text: '—', ok: false };
   const n = data.length;
   const d = data;
   switch (type) {
-    case CFG.TYPE.PRODUCT_INFO:
-      return { text: '协议版本 ' + (d[0] || 0) + ' · 厂商ID "' + asciiOf(d.slice(1, 3)) + '"',
-               ok: n >= 3 };
-    case CFG.TYPE.MODULE_INFO: {
-      const id = asciiOf(d.slice(0, 9)).replace(/\.+$/, '');
-      const ver = asciiOf(d.slice(10, 16)).replace(/\.+$/, '');
-      return { text: 'ID "' + id + '" · 固件 "' + ver + '"', ok: n >= 16 };
+    case CFG.TYPE.PRODUCT_INFO:            // 3B：1B 协议版本 + 2B 厂商 ID 字符串
+      if (n !== 3) return { text: '长度异常 ' + n + 'B（应 3B）', ok: false };
+      return { text: '协议版本 ' + d[0] + ' · 厂商ID "' + asciiOf(d.subarray(1, 3)) + '"',
+               ok: true, value: d[0] };
+    case CFG.TYPE.MODULE_INFO: {           // 16B：设备 ID(1-9) + ',' + 固件版本(11-16)
+      if (n !== 16) return { text: '长度异常 ' + n + 'B（应 16B）', ok: false };
+      const id = asciiOf(d.subarray(0, 9)).replace(/\.+$/, '');
+      const sep = String.fromCharCode(d[9]);
+      const ver = asciiOf(d.subarray(10, 16)).replace(/\.+$/, '');
+      return { text: 'ID "' + id + '" · 分隔 "' + sep + '" · 固件 "' + ver + '"',
+               ok: true, value: { id, version: ver } };
     }
-    case CFG.TYPE.DETECT_DELAY:
-      return n >= 2 ? { text: readUint16BE(d, 0) + ' s（目标消失后保持有人）', ok: true }
-                    : { text: '长度异常 ' + n + 'B', ok: false };
-    case CFG.TYPE.LOCK_TIME:
-      return n >= 2 ? { text: readUint16BE(d, 0) + ' s（闭锁时间）', ok: true }
-                    : { text: '长度异常 ' + n + 'B', ok: false };
-    case CFG.TYPE.CHANNEL_COUNT:
-      return n >= 1 ? { text: d[0] + ' 个通道', ok: true } : { text: '长度异常 ' + n + 'B', ok: false };
-    case CFG.TYPE.CHANNEL_RANGE:
-      if (n < 13) return { text: '长度异常 ' + n + 'B（应 13B）', ok: false };
-      return { text: '通道 ' + d[0] + ' · 运动 ' + readUint16BE(d, 1) + '~' + readUint16BE(d, 3) +
-                     ' mm / ' + readInt8(d, 5) + '°~' + readInt8(d, 6) + '° · 存在 ' +
-                     readUint16BE(d, 7) + '~' + readUint16BE(d, 9) + ' mm / ' +
-                     readInt8(d, 11) + '°~' + readInt8(d, 12) + '°', ok: true };
-    case CFG.TYPE.REPORT_FREQ:
-      return n >= 2 ? { text: readUint16BE(d, 0) + ' × 100 ms = ' + (readUint16BE(d, 0) * 100) +
-                              ' ms', ok: true, value: readUint16BE(d, 0) }
-                    : { text: '长度异常 ' + n + 'B', ok: false };
-    case CFG.TYPE.WORK_MODE:
-      return n >= 1 ? { text: (CFG.WORK_MODE_NAMES[d[0]] || ('未知 ' + d[0])) + '（' + d[0] + '）',
-                        ok: true, value: d[0] } : { text: '长度异常 ' + n + 'B', ok: false };
+    case CFG.TYPE.LOCK_TIME:               // uint16 s
+      if (n !== 2) return { text: '长度异常 ' + n + 'B（应 2B）', ok: false };
+      return { text: readUint16BE(d, 0) + ' s（无人后重新进入有人需等待）',
+               ok: true, value: readUint16BE(d, 0) };
+    case CFG.TYPE.REPORT_FREQ: {           // uint16 × 100 ms
+      if (n !== 2) return { text: '长度异常 ' + n + 'B（应 2B）', ok: false };
+      const v = readUint16BE(d, 0);
+      return { text: v + ' × 100 ms = ' + (v * 100) + ' ms', ok: true, value: v };
+    }
+    case CFG.TYPE.RF_MODE:                 // uint8：0 关闭射频 / 1 正常
+      if (n !== 1) return { text: '长度异常 ' + n + 'B（应 1B）', ok: false };
+      return { text: (CFG.RF_MODE_NAMES[d[0]] || ('未知 ' + d[0])) + '（' + d[0] + '）',
+               ok: true, value: d[0] };
     case CFG.TYPE.TRIGGER_ENABLE:
     case CFG.TYPE.FORCE_LEAVE_30MIN:
-    case CFG.TYPE.DEBUG_MODE:
-    case CFG.TYPE.FACTORY_RESET:
-      return n >= 1 ? { text: (d[0] === 1 ? '开（1）' : (d[0] === 0 ? '关（0）' : '未知 ' + d[0])),
-                        ok: true, value: d[0] } : { text: '长度异常 ' + n + 'B', ok: false };
-    case CFG.TYPE.SELFCHECK_AFTER_LEAVE:
-      return n >= 2 ? { text: readUint16BE(d, 0) + ' s（无人后允许存在检测时间）', ok: true }
-                    : { text: '长度异常 ' + n + 'B', ok: false };
-    case CFG.TYPE.TRIGGER_MODE:
-      return n >= 1 ? { text: (CFG.TRIGGER_MODE_NAMES[d[0]] || ('未知 ' + d[0])) + '（' + d[0] + '）',
-                        ok: true, value: d[0] } : { text: '长度异常 ' + n + 'B', ok: false };
-    case CFG.TYPE.MOUNT_HEIGHT:
-      return n >= 2 ? { text: readUint16BE(d, 0) + ' mm', ok: true, value: readUint16BE(d, 0) }
-                    : { text: '长度异常 ' + n + 'B', ok: false };
-    case CFG.TYPE.DETECT_HEIGHT:
-      return n >= 4 ? { text: readUint16BE(d, 0) + '~' + readUint16BE(d, 2) + ' mm', ok: true }
-                    : { text: '长度异常 ' + n + 'B', ok: false };
-    case CFG.TYPE.DETECT_RANGE:
-      if (n < 16) return { text: '长度异常 ' + n + 'B（应 16B）', ok: false };
-      return { text: '运动 x ' + readInt16BE(d, 0) + '~' + readInt16BE(d, 2) +
-                     ' / y ' + readInt16BE(d, 4) + '~' + readInt16BE(d, 6) +
-                     ' mm · 存在 x ' + readInt16BE(d, 8) + '~' + readInt16BE(d, 10) +
-                     ' / y ' + readInt16BE(d, 12) + '~' + readInt16BE(d, 14) + ' mm',
-               ok: true };
+      if (n !== 1) return { text: '长度异常 ' + n + 'B（应 1B）', ok: false };
+      return { text: (d[0] === 1 ? '开（1）' : (d[0] === 0 ? '关（0）' : '未知 ' + d[0])),
+               ok: true, value: d[0] };
+    case CFG.TYPE.LEARN_STATE:             // uint16 剩余秒；0 = 未在自学习
+      if (n !== 2) return { text: '长度异常 ' + n + 'B（应 2B）', ok: false };
+      return { text: readUint16BE(d, 0) === 0
+                       ? '未在自学习（0 s）'
+                       : ('自学习中，剩余 ' + readUint16BE(d, 0) + ' s'),
+               ok: true, value: readUint16BE(d, 0) };
+    case CFG.TYPE.TRIGGER_MODE:            // uint8 0~3
+      if (n !== 1) return { text: '长度异常 ' + n + 'B（应 1B）', ok: false };
+      return { text: (CFG.TRIGGER_MODE_NAMES[d[0]] || ('未知 ' + d[0])) + '（' + d[0] + '）',
+               ok: true, value: d[0] };
+    case CFG.TYPE.MOUNT_HEIGHT:            // uint16 mm
+      if (n !== 2) return { text: '长度异常 ' + n + 'B（应 2B）', ok: false };
+      return { text: readUint16BE(d, 0) + ' mm', ok: true, value: readUint16BE(d, 0) };
+    case CFG.TYPE.DETECT_HEIGHT: {         // 2 × uint16 mm（下限、上限）
+      if (n !== 4) return { text: '长度异常 ' + n + 'B（应 4B）', ok: false };
+      const lo = readUint16BE(d, 0), hi = readUint16BE(d, 2);
+      return { text: lo + '~' + hi + ' mm', ok: true, value: [lo, hi] };
+    }
+    case CFG.TYPE.DETECT_RANGE: {
+      const r = parseDetectRange(d);
+      if (!r.ok) return { text: r.error, ok: false };
+      const fmt = b => b.minX + '~' + b.maxX + ' / ' + b.minY + '~' + b.maxY;
+      return { text: '运动 x/y ' + fmt(r.motion) + ' mm · 存在 x/y ' + fmt(r.presence) + ' mm',
+               ok: true, value: r };
+    }
+    case CFG.TYPE.MASK_ZONE: {
+      const z = parseMaskZones(d);
+      if (!z.ok) return { text: z.error, ok: false };
+      return { text: z.count === 0 ? '无屏蔽区（数量 0）'
+                                   : (z.count + ' 个屏蔽区：' +
+                                      z.zones.map(x => '#' + x.id).join(' ')),
+               ok: true, value: z };
+    }
     default:
-      return { text: asciiOf(d).trim() || ('原始 ' + bytesToHex(d)), ok: true };
+      return { text: '原始 ' + bytesToHex(d), ok: true, value: null };
   }
 }
 
 /**
  * 连接后的只读查询计划（默认只读不变量：这里不允许出现任何 SET）
- * 14 条 GET：0x02 设备信息 / 0x11 / 0x12 / 0x17 / 0x18 / 0x1B / 0x1C / 0x1D / 0x1E /
- *            0x24 / 0x25 / 0x13 / 0x14 / 0x27
+ * 13 条 GET，顺序见事实包 §6：
+ *   0x01 产品信息 → 0x02 模块信息 → 0x12 闭锁时间 → 0x17 上报频率 → 0x18 射频模式
+ *   → 0x1B 触发使能 → 0x1D 30min → 0x23 自学习状态 → 0x24 触发模式 → 0x25 挂高
+ *   → 0x26 检测高度 → 0x27 检测范围 → 0x29 屏蔽区
  */
 function buildReadPlan() {
-  const types = [CFG.TYPE.MODULE_INFO, CFG.TYPE.DETECT_DELAY, CFG.TYPE.LOCK_TIME,
-                 CFG.TYPE.REPORT_FREQ, CFG.TYPE.WORK_MODE, CFG.TYPE.TRIGGER_ENABLE,
-                 CFG.TYPE.SELFCHECK_AFTER_LEAVE, CFG.TYPE.FORCE_LEAVE_30MIN,
-                 CFG.TYPE.DEBUG_MODE, CFG.TYPE.TRIGGER_MODE, CFG.TYPE.MOUNT_HEIGHT,
-                 CFG.TYPE.CHANNEL_COUNT, CFG.TYPE.CHANNEL_RANGE, CFG.TYPE.DETECT_RANGE];
+  const types = [CFG.TYPE.PRODUCT_INFO, CFG.TYPE.MODULE_INFO, CFG.TYPE.LOCK_TIME,
+                 CFG.TYPE.REPORT_FREQ, CFG.TYPE.RF_MODE, CFG.TYPE.TRIGGER_ENABLE,
+                 CFG.TYPE.FORCE_LEAVE_30MIN, CFG.TYPE.LEARN_STATE, CFG.TYPE.TRIGGER_MODE,
+                 CFG.TYPE.MOUNT_HEIGHT, CFG.TYPE.DETECT_HEIGHT, CFG.TYPE.DETECT_RANGE,
+                 CFG.TYPE.MASK_ZONE];
   return types.map((type, i) => ({
     atMs: CFG.readSeq.firstDelayMs + i * CFG.readSeq.gapMs,
     op: CFG.OP.GET,
@@ -1314,36 +1136,135 @@ function buildReadPlan() {
 }
 
 /**
- * 「应用演示推荐参数」的 5 条 SET（顺序即下发顺序）：
- *   0x17 = 10（上报周期 1 s）→ 0x11 = 3（检测延时 3 s）→ 0x24 = 0（正常运动触发）
- *   → 0x25 = 2500（挂高 2500 mm）→ 0x1E = 1（调试模式，打开才有 0x80，待实测）
- * 每条都带 readback 比对用的期望字节，逐条下发后立即回读同 type 并比对。
+ * SET 值语义校验（协议 §2 的取值约束）。
+ * 高危/固定值命令在这里就把非法值挡住，绝不把错值发上串口。
+ */
+function assertSetValue(type, data) {
+  const d = data || new Uint8Array(0);
+  const n = d.length;
+  const fail = msg => { throw new Error('0x' + hex2(type) + ' ' + msg); };
+  const need = len => { if (n !== len) fail('长度应为 ' + len + 'B，实际 ' + n + 'B'); };
+  const u8 = () => { need(1); return d[0]; };
+  const u16 = () => { need(2); return readUint16BE(d, 0); };
+  switch (type) {
+    case CFG.TYPE.FACTORY_RESET:          // 0x1F 固定写 1（高危）
+      need(1);
+      if (d[0] !== 1) fail('恢复出厂只能写 1，实际 0x' + hex2(d[0]));
+      return true;
+    case CFG.TYPE.FORCE_LEAVE:            // 0x1A 固定写 1
+      need(1);
+      if (d[0] !== 1) fail('强制进入无人只能写 1，实际 0x' + hex2(d[0]));
+      return true;
+    case CFG.TYPE.AUTO_HEIGHT:            // 0x28 固定写 1
+      need(1);
+      if (d[0] !== 1) fail('自动测高只能写 1，实际 0x' + hex2(d[0]));
+      return true;
+    case CFG.TYPE.LEARN_TIME: {           // 0x20 30~65535 s
+      const v = u16();
+      if (v < 30) fail('自学习时间应 ≥ 30 s，实际 ' + v);
+      return true;
+    }
+    case CFG.TYPE.LEARN_EXIT:             // 0x21 1 保存 / 2 不保存
+    case CFG.TYPE.LEARN_RESTORE:          // 0x22 1 上次参数 / 2 默认参数
+      if (u8() !== 1 && d[0] !== 2) fail('取值应为 1 或 2，实际 ' + d[0]);
+      return true;
+    case CFG.TYPE.RF_MODE:                // 0x18 0 关射频 / 1 正常
+      if (u8() > 1) fail('取值应为 0 或 1，实际 ' + d[0]);
+      return true;
+    case CFG.TYPE.TRIGGER_ENABLE:         // 0x1B 0/1
+    case CFG.TYPE.FORCE_LEAVE_30MIN:      // 0x1D 0/1
+      if (u8() > 1) fail('取值应为 0 或 1，实际 ' + d[0]);
+      return true;
+    case CFG.TYPE.TRIGGER_MODE:           // 0x24 0~3
+      if (u8() > 3) fail('取值应为 0~3，实际 ' + d[0]);
+      return true;
+    case CFG.TYPE.REPORT_FREQ: {          // 0x17 1~65535（× 100 ms）
+      const v = u16();
+      if (v < 1) fail('上报频率应 ≥ 1，实际 ' + v);
+      return true;
+    }
+    case CFG.TYPE.LOCK_TIME:              // 0x12 0~65535 s
+      u16();
+      return true;
+    case CFG.TYPE.MOUNT_HEIGHT: {         // 0x25 1200~5000 mm
+      const v = u16();
+      if (v < 1200 || v > 5000) fail('挂高应在 1200~5000 mm，实际 ' + v);
+      return true;
+    }
+    case CFG.TYPE.DETECT_HEIGHT: {        // 0x26 下限 ≤ 上限
+      need(4);
+      const lo = readUint16BE(d, 0), hi = readUint16BE(d, 2);
+      if (lo > hi) fail('检测高度下限 ' + lo + ' > 上限 ' + hi);
+      return true;
+    }
+    case CFG.TYPE.DETECT_RANGE:
+      need(P.detectRangeLen);
+      return true;
+    case CFG.TYPE.MASK_ZONE: {
+      const c = d[0];
+      if (c > P.maskMax) fail('屏蔽区最多 ' + P.maskMax + ' 个，实际 ' + c);
+      if (n !== 1 + c * P.maskStride) {
+        fail('长度应为 1+' + c + '×13 = ' + (1 + c * P.maskStride) + 'B，实际 ' + n + 'B');
+      }
+      return true;
+    }
+    default:
+      return true;                        // 只读命令/上报命令不在这里管
+  }
+}
+
+/** 组一条 SET 帧：先做语义校验（含 0x1F 只能写 1），再组帧 */
+function buildSetFrame(type, data, msgId) {
+  assertSetValue(type, data);
+  return createFrame(CFG.OP.SET, type, data, msgId);
+}
+
+/**
+ * 「应用演示推荐参数」的 5 条 SET（事实包 §6，顺序即下发顺序）：
+ *   0x17 = 10（上报周期 1 s）→ 0x12 = 1（闭锁 1 s）→ 0x24 = 0（正常运动触发）
+ *   → 0x25 = 2500（挂高 2500 mm）→ 0x18 = 1（射频正常）
+ * 每条都带回读比对用的期望字节，逐条下发后立即回读同 type 并逐字节比对。
  */
 function buildPresetPlan() {
   const pr = CFG.defaults.preset;
-  const f = []; pushUint16BE(f, pr.reportFreq100ms);
-  const d = []; pushUint16BE(d, pr.detectDelayS);
-  const m = []; pushUint16BE(m, pr.mountMm);
   return [
     { type: CFG.TYPE.REPORT_FREQ, name: '状态上报频率',
       display: pr.reportFreq100ms + '（= ' + (pr.reportFreq100ms * 100) + ' ms）',
-      data: Uint8Array.from(f) },
-    { type: CFG.TYPE.DETECT_DELAY, name: '检测延时', display: pr.detectDelayS + ' s',
-      data: Uint8Array.from(d) },
+      data: encodeUint16(pr.reportFreq100ms) },
+    { type: CFG.TYPE.LOCK_TIME, name: '闭锁时间',
+      display: pr.lockTimeS + ' s', data: encodeUint16(pr.lockTimeS) },
     { type: CFG.TYPE.TRIGGER_MODE, name: '触发模式',
       display: (CFG.TRIGGER_MODE_NAMES[pr.triggerMode] || '') + '（' + pr.triggerMode + '）',
       data: Uint8Array.from([pr.triggerMode & 0xFF]) },
     { type: CFG.TYPE.MOUNT_HEIGHT, name: '挂高', display: pr.mountMm + ' mm',
-      data: Uint8Array.from(m) },
-    { type: CFG.TYPE.DEBUG_MODE, name: '调试模式', display: '开（1）（0x80 能量帧，待实测）',
-      data: Uint8Array.from([pr.debugMode & 0xFF]) }
+      data: encodeUint16(pr.mountMm) },
+    { type: CFG.TYPE.RF_MODE, name: '雷达射频工作模式',
+      display: '正常工作（1）', data: Uint8Array.from([pr.rfMode & 0xFF]) }
   ];
 }
 
-/** 恢复出厂（0x1F=1）：高危，默认禁用，双重确认后才允许发出 */
+/* 高危单发计划（默认禁用，二次确认后才允许发出） */
 function buildFactoryResetPlan() {
   return [{ type: CFG.TYPE.FACTORY_RESET, name: '恢复出厂设置', display: '1（恢复出厂）',
             data: Uint8Array.from([0x01]) }];
+}
+function buildForceLeavePlan() {
+  return [{ type: CFG.TYPE.FORCE_LEAVE, name: '强制进入无人', display: '1',
+            data: Uint8Array.from([0x01]) }];
+}
+function buildLearnPlan(seconds) {
+  return [{ type: CFG.TYPE.LEARN_TIME, name: '进入自学习时间', display: seconds + ' s',
+            data: encodeUint16(seconds) }];
+}
+function buildLearnExitPlan(mode) {
+  return [{ type: CFG.TYPE.LEARN_EXIT, name: '强制退出自学习',
+            display: (CFG.LEARN_EXIT_NAMES[mode] || '') + '（' + mode + '）',
+            data: Uint8Array.from([mode & 0xFF]) }];
+}
+function buildLearnRestorePlan(mode) {
+  return [{ type: CFG.TYPE.LEARN_RESTORE, name: '自学习参数恢复',
+            display: (CFG.LEARN_RESTORE_NAMES[mode] || '') + '（' + mode + '）',
+            data: Uint8Array.from([mode & 0xFF]) }];
 }
 
 /**
@@ -1373,7 +1294,7 @@ function evaluatePresence(now, last81, period100ms) {
              sinceLastMs: since, windowMs: win, silent: false,
              word: p === 1 ? '有人' : '无人' };
   }
-  return { presence: 0, basis: 'silence', basisText: '超时推断（静默 ' + fmtSec(since) + '）',
+  return { presence: 0, basis: 'silence', basisText: '按静默推断（静默 ' + fmtSec(since) + '）',
            sinceLastMs: since, windowMs: win, silent: true, word: '无人' };
 }
 
@@ -1381,7 +1302,7 @@ function evaluatePresence(now, last81, period100ms) {
  * 链路健康度（与「静默」完全独立的一个状态）：故障 ≠ 静默。
  *   'none'   正常
  *   'no-data' 已连接但从未收到任何合法帧（且收字节 > 0 超过静默窗）
- *   'bad-rate' 坏帧率 > 20%（帧总数 ≥ 10 才判，避免刚连上时误报）
+ *   'bad-rate' 坏帧率 > 20%（好帧 ≥ 10 才判，避免刚连上时误报）
  *   'idle'   已连接、无收字节（刚打开串口，还没数据）
  */
 function evaluateLink(now, st) {
@@ -1441,8 +1362,12 @@ function concatBytes(list) {
   for (const c of list) { all.set(c, off); off += c.length; }
   return all;
 }
+function bytesEqual(a, b) {
+  if (!a || !b || a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
 // ==== CORE-END ====
-
 /* ==========================================================================
  * 三、CASES-BEGIN —— 自测用例（16 条）与用例运行器
  *    与 scripts/edv163_presence_selftest.mjs 完全同源：Node 端把 CORE 段 + 本段
@@ -1478,22 +1403,6 @@ function checker() {
   };
 }
 
-/** 构造「不做转义」的帧：模拟设备上报方向未转义的情形（只用于自测） */
-function buildUnescapedFrame(op, type, data, msgId) {
-  const d = data || new Uint8Array(0);
-  const total = P.minFrameLength + d.length;
-  const out = new Uint8Array(total);
-  out[0] = P.header[0]; out[1] = P.header[1];
-  out[2] = (total >> 8) & 0xFF; out[3] = total & 0xFF;
-  out[4] = ((msgId || 0) >> 8) & 0xFF; out[5] = (msgId || 0) & 0xFF;
-  out[6] = op; out[7] = type;
-  out[8] = (d.length >> 8) & 0xFF; out[9] = d.length & 0xFF;
-  out.set(d, 10);
-  out[total - 2] = checksum(out, 0, total - 2);
-  out[total - 1] = P.tail;
-  return out;
-}
-
 /** 把若干段字节依次喂给同一个解析器，返回累计帧表 */
 function feedAll(parser, chunks) {
   const frames = [];
@@ -1504,366 +1413,468 @@ function feedAll(parser, chunks) {
   return frames;
 }
 
-/** 一条标准 0x81 载荷：presence/state/direction + x/y/z */
-function ch81(presence, state, direction, x, y, z) {
+/** 一条标准 0x81 单目标载荷对象 */
+function t81(presence, state, direction, x, y, z) {
   return { presence, state, direction, x, y, z };
+}
+
+/**
+ * 官方示例帧表（《EDV163-N-03 串口通信协议 V1.4》§4「命令示例」，共 39 条帧：
+ * 19 组「主机发送 + 模组响应」共 38 条，加上 1 条模组主动上报的 Status）。
+ * 每行 = [op, type, Value 十六进制（"" = 无 Value）, 文档原帧十六进制]。
+ * 这些行只作为**回归输入/期望**；页面自己发出去的每一帧仍然只由 createFrame 生成。
+ */
+const OFFICIAL_FRAMES = [
+  /* 01 产品信息 */ [0xA0, 0x01, '', '45 44 00 0B 00 01 A0 01 00 00 36'],
+  [0xA2, 0x01, '00 45 44', '45 44 00 0E 00 01 A2 01 00 03 00 45 44 C7'],
+  /* 02 雷达模块信息 */ [0xA0, 0x02, '', '45 44 00 0B 00 01 A0 02 00 00 37'],
+  [0xA2, 0x02, '45 44 51 31 35 32 5F 56 42 2C 56 32 2E 30 2E 30',
+   '45 44 00 1B 00 01 A2 02 00 10 45 44 51 31 35 32 5F 56 42 2C 56 32 2E 30 2E 30 32'],
+  /* 03 闭锁时间 */ [0xA1, 0x12, '00 02', '45 44 00 0D 00 01 A1 12 00 02 00 02 4E'],
+  [0xA2, 0x12, '00 02', '45 44 00 0D 00 01 A2 12 00 02 00 02 4F'],
+  /* 04 上报频率（Value 里的 0A 是原值，不填充） */
+  [0xA1, 0x17, '00 0A', '45 44 00 0D 00 01 A1 17 00 02 00 0A 5B'],
+  [0xA2, 0x17, '00 0A', '45 44 00 0D 00 01 A2 17 00 02 00 0A 5C'],
+  /* 05 射频模式 */ [0xA1, 0x18, '00', '45 44 00 0C 00 01 A1 18 00 01 00 50'],
+  [0xA2, 0x18, '00', '45 44 00 0C 00 01 A2 18 00 01 00 51'],
+  /* 06 强制无人 */ [0xA1, 0x1A, '01', '45 44 00 0C 00 01 A1 1A 00 01 01 53'],
+  [0xA2, 0x1A, '01', '45 44 00 0C 00 01 A2 1A 00 01 01 54'],
+  /* 07 触发使能 */ [0xA1, 0x1B, '01', '45 44 00 0C 00 01 A1 1B 00 01 01 54'],
+  [0xA2, 0x1B, '01', '45 44 00 0C 00 01 A2 1B 00 01 01 55'],
+  /* 08 30min 强制无人 */ [0xA1, 0x1D, '01', '45 44 00 0C 00 01 A1 1D 00 01 01 56'],
+  [0xA2, 0x1D, '01', '45 44 00 0C 00 01 A2 1D 00 01 01 57'],
+  /* 09 恢复出厂 */ [0xA1, 0x1F, '01', '45 44 00 0C 00 01 A1 1F 00 01 01 58'],
+  [0xA2, 0x1F, '01', '45 44 00 0C 00 01 A2 1F 00 01 01 59'],
+  /* 10 进入自学习 60 s */ [0xA1, 0x20, '00 3C', '45 44 00 0D 00 01 A1 20 00 02 00 3C 96'],
+  [0xA2, 0x20, '00 3C', '45 44 00 0D 00 01 A2 20 00 02 00 3C 97'],
+  /* 11 强制退出自学习 */ [0xA1, 0x21, '01', '45 44 00 0C 00 01 A1 21 00 01 01 5A'],
+  [0xA2, 0x21, '01', '45 44 00 0C 00 01 A2 21 00 01 01 5B'],
+  /* 12 自学习参数恢复 */ [0xA1, 0x22, '01', '45 44 00 0C 00 01 A1 22 00 01 01 5B'],
+  [0xA2, 0x22, '01', '45 44 00 0C 00 01 A2 22 00 01 01 5C'],
+  /* 13 自学习状态 */ [0xA0, 0x23, '', '45 44 00 0B 00 01 A0 23 00 00 58'],
+  [0xA2, 0x23, '00 3C', '45 44 00 0D 00 01 A2 23 00 02 00 3C 9A'],
+  /* 14 触发模式 */ [0xA1, 0x24, '03', '45 44 00 0C 00 01 A1 24 00 01 03 5F'],
+  [0xA2, 0x24, '03', '45 44 00 0C 00 01 A2 24 00 01 03 60'],
+  /* 15 上报数据（主动 Status，单条，无主机命令） */
+  [0xA3, 0x81, '01 02 01 00 64 00 C8 05 DC',
+   '45 44 00 14 00 01 A3 81 00 09 01 02 01 00 64 00 C8 05 DC DC'],
+  /* 16 挂高 3000 mm */ [0xA1, 0x25, '0B B8', '45 44 00 0D 00 01 A1 25 00 02 0B B8 22'],
+  [0xA2, 0x25, '0B B8', '45 44 00 0D 00 01 A2 25 00 02 0B B8 23'],
+  /* 17 检测高度 1200~2300 mm */
+  [0xA1, 0x26, '04 B0 08 FC', '45 44 00 0F 00 01 A1 26 00 04 04 B0 08 FC 1C'],
+  [0xA2, 0x26, '04 B0 08 FC', '45 44 00 0F 00 01 A2 26 00 04 04 B0 08 FC 1D'],
+  /* 18 检测范围 ±3000 */
+  [0xA1, 0x27, 'F4 48 0B B8 F4 48 0B B8 F4 48 0B B8 F4 48 0B B8',
+   '45 44 00 1B 00 01 A1 27 00 10 F4 48 0B B8 F4 48 0B B8 F4 48 0B B8 F4 48 0B B8 79'],
+  [0xA2, 0x27, 'F4 48 0B B8 F4 48 0B B8 F4 48 0B B8 F4 48 0B B8',
+   '45 44 00 1B 00 01 A2 27 00 10 F4 48 0B B8 F4 48 0B B8 F4 48 0B B8 F4 48 0B B8 7A'],
+  /* 19 自动测高 */ [0xA1, 0x28, '01', '45 44 00 0C 00 01 A1 28 00 01 01 61'],
+  [0xA2, 0x28, '01', '45 44 00 0C 00 01 A2 28 00 01 01 62'],
+  /* 20 屏蔽区 ×1 */
+  [0xA1, 0x29, '01 01 FE 0C 01 F4 FE 0C 01 F4 00 00 07 D0',
+   '45 44 00 19 00 01 A1 29 00 0E 01 01 FE 0C 01 F4 FE 0C 01 F4 00 00 07 D0 52'],
+  [0xA2, 0x29, '01 01 FE 0C 01 F4 FE 0C 01 F4 00 00 07 D0',
+   '45 44 00 19 00 01 A2 29 00 0E 01 01 FE 0C 01 F4 FE 0C 01 F4 00 00 07 D0 53']
+];
+
+/** 官方 39 条示例帧拼成的连续字节流（用于整段回归） */
+function officialStream() {
+  return concatBytes(OFFICIAL_FRAMES.map(r => hexToBytes(r[3])));
 }
 
 const SELFTEST_CASES = [
   {
-    id: 'T1', name: '正文含 0x0A 的转义帧（x = 0x0A09，且 tlv_len 低字节也是 0x09）',
-    exp: '1 条好帧、已转义口径、还原 3 处转义、声明 21B / 线上 24B、x=2569 y=-100 z=500、坏帧 0',
+    id: 'T1', name: '官方 §4 全部 39 条示例帧整段回归 + GET 0x01 逐字节',
+    exp: '一次喂入解出 39 条好帧、坏帧 0、未归属 0B；每条用 createFrame 重新生成后与文档字节逐字节一致；' +
+         'GET 0x01 = 45 44 00 0B 00 01 A0 01 00 00 36',
     check: function () {
       const ck = checker();
-      const data = buildReport81Payload([ch81(1, 2, 1, 2569, -100, 500)]);
-      ck.eq(bytesToHex(data), '01 02 01 0A 09 FF 9C 01 F4', '还原后载荷');
-      const wire = createFrame(0xA3, 0x81, data, 0x0021);
+      const stream = officialStream();
+      const p = new EdvParser();
+      const frames = feedAll(p, [stream]);
+      ck.eq(frames.length, 39, '官方示例帧条数');
+      ck.eq(p.badFrames, 0, '坏帧数');
+      ck.eq(p.stats.badChecksum, 0, '校验和错');
+      ck.eq(p.stats.noiseBytes, 0, '帧头前无归属字节');
+      ck.eq(unattributedBytes(p, stream.length), 0, '未归属字节');
+      ck.eq(p.stats.attributedBytes, stream.length, '已归属字节 = 全部输入字节');
+
+      /* 逐条重生成：校验和 / 长度域都必须由 createFrame 算出并与文档一致 */
+      const mismatch = [];
+      for (const [op, type, v, f] of OFFICIAL_FRAMES) {
+        const gen = bytesToHex(createFrame(op, type, hexToBytes(v), 0x0001));
+        if (gen !== f) mismatch.push('0x' + hex2(type) + '/' + hex2(op) + ' 生成 ' + gen);
+      }
+      ck.eq(mismatch.length, 0, '39 条重生成的差异条数');
+      ck.eq(mismatch, [], '差异明细');
+
+      /* 单条点名断言（任务书第 1 条） */
+      const get01 = bytesToHex(createFrame(0xA0, 0x01, null, 0x0001));
+      ck.eq(get01, '45 44 00 0B 00 01 A0 01 00 00 36', 'GET 0x01');
+      const g = hexToBytes('45 44 00 0B 00 01 A0 01 00 00 36');
+      ck.eq(checksum(g, 0, g.length - 1), g[g.length - 1], '校验和 = sum(data[0:-1]) 末字节');
+      ck.eq([g.length, (g[2] << 8) | g[3]], [11, 11], '帧长 = 长度域 = 11 + 0');
+      return ck.result();
+    }
+  },
+  {
+    id: 'T2', name: '官方 0x01 Report（Value 内含 45 44）必须按长度切帧，不能靠帧头重扫',
+    exp: '单帧解出 1 条、声明长度 14、Value = 00 45 44；其后紧跟的 GET 0x02 仍能正常解出，未归属 0B',
+    check: function () {
+      const ck = checker();
+      const rep = hexToBytes('45 44 00 0E 00 01 A2 01 00 03 00 45 44 C7');
+      /* 帧内偏移 11 处还有一对 45 44（Value 的 00 后的 45 44）—— 靠帧头重扫会在此提前切断 */
+      let embeddedAt = -1;
+      for (let i = 2; i + 1 < rep.length; i++) {
+        if (rep[i] === 0x45 && rep[i + 1] === 0x44) { embeddedAt = i; break; }
+      }
+      ck.eq(embeddedAt, 11, '帧内嵌帧头字节的偏移');
+      ck.is(embeddedAt < rep.length, '内嵌帧头落在帧边界之内（重扫会误切）', '偏离帧内');
+
+      const p1 = new EdvParser();
+      const f1 = p1.feed(rep);
+      ck.eq(f1.length, 1, '单帧解出条数');
+      ck.eq([f1[0].lenField, f1[0].tlvLen, f1[0].type, f1[0].op], [14, 3, 0x01, 0xA2], '帧字段');
+      ck.eq(bytesToHex(f1[0].data), '00 45 44', 'Value（含 45 44）');
+      ck.eq(p1.badFrames, 0, '坏帧数');
+
+      /* 与随后的官方 GET 0x02 粘在一起 */
+      const next = hexToBytes('45 44 00 0B 00 01 A0 02 00 00 37');
+      const p2 = new EdvParser();
+      const f2 = p2.feed(concatBytes([rep, next]));
+      ck.eq(f2.length, 2, '粘包两帧');
+      ck.eq([f2[0].type, f2[1].type, f2[1].op], [0x01, 0x02, 0xA0], '两帧 type/op');
+      ck.eq(unattributedBytes(p2, rep.length + next.length), 0, '未归属字节');
+      return ck.result();
+    }
+  },
+  {
+    id: 'T3', name: '官方 0x81 Status 解析（有人 / 运动 / 靠近 / X=100 / Y=200 / Z=1500）',
+    exp: '1 条 Status 帧、Value 9B、presence=1 state=2 direction=1 x=100 y=200 z=1500；' +
+         'buildReport81Payload 往返一致',
+    check: function () {
+      const ck = checker();
+      const wire = hexToBytes('45 44 00 14 00 01 A3 81 00 09 01 02 01 00 64 00 C8 05 DC DC');
       const p = new EdvParser();
       const frames = p.feed(wire);
-      ck.eq(frames.length, 1, '完好帧数');
+      ck.eq(frames.length, 1, '帧数');
       const f = frames[0] || {};
-      ck.eq(f.basis, 'escaped', '还原口径');
-      /* 3 处转义：tlv_len 低字节 0x09、x 高字节 0x0A、x 低字节 0x09 */
-      ck.eq(f.escaped, 3, '还原的转义序列数');
-      ck.eq(f.lenField, 21, '声明长度（转义前）');
-      ck.eq(f.wireLen, 24, '线上字节数（转义后变长 3B）');
+      ck.eq([f.op, f.type, f.lenField, f.tlvLen], [0xA3, 0x81, 20, 9], '帧字段');
       const rep = parseReport81(f.data);
-      ck.eq([rep.count, rep.channels[0].x, rep.channels[0].y, rep.channels[0].z],
-            [1, 2569, -100, 500], '解析结果');
+      ck.eq(rep.ok, true, '解析通过');
+      const t = rep.target || {};
+      ck.eq([t.presence, t.state, t.direction], [1, 2, 1], '枚举字段');
+      ck.eq([t.x, t.y, t.z], [100, 200, 1500], '坐标');
+      ck.eq(bytesToHex(f.data), '01 02 01 00 64 00 C8 05 DC', '原始 9B');
+      ck.eq(bytesToHex(buildReport81Payload(t)), bytesToHex(f.data), '构造器往返');
       ck.eq(p.badFrames, 0, '坏帧数');
       return ck.result();
     }
   },
   {
-    id: 'T2', name: '正文含 0x09 的转义帧（x = 0x0901、y = 0x0209 → 09 00）',
-    exp: '1 条好帧、还原 3 处转义、x=2305 y=521 z=-1',
+    id: 'T4', name: 'X 负值（FF 9C → -100）、Y 正值、Z 无符号（FF FF → 65535）',
+    exp: 'x=-100 y=200 z=1500；z 读作 65535 而不是 -1；x 的 FF FF → -1',
     check: function () {
       const ck = checker();
-      const data = buildReport81Payload([ch81(1, 0, 0, 2305, 521, -1)]);
-      ck.eq(bytesToHex(data), '01 00 00 09 01 02 09 FF FF', '还原后载荷');
-      const wire = createFrame(0xA3, 0x81, data, 0x0022);
-      const p = new EdvParser();
-      const frames = p.feed(wire);
-      ck.eq(frames.length, 1, '完好帧数');
-      const f = frames[0] || {};
-      /* 3 处转义：tlv_len 低字节 0x09、x 高字节 0x09、y 低字节 0x09 */
-      ck.eq(f.escaped, 3, '还原的转义序列数');
-      const rep = parseReport81(f.data);
-      ck.eq([rep.channels[0].x, rep.channels[0].y, rep.channels[0].z],
-            [2305, 521, -1], '解析结果');
-      ck.eq(p.badFrames, 0, '坏帧数');
+      const rep = parseReport81(hexToBytes('01 02 02 FF 9C 00 C8 05 DC'));
+      ck.eq([rep.target.x, rep.target.y, rep.target.z], [-100, 200, 1500], '负 X 载荷');
+      ck.eq(rep.target.direction, 2, '方向（远离）');
+
+      const zbig = parseReport81(hexToBytes('01 01 00 00 64 00 C8 FF FF')).target;
+      ck.eq(zbig.z, 65535, 'Z = 0xFFFF（uint16 无符号）');
+      ck.is(zbig.z !== -1, 'Z 不得按 int16 读成 -1', 'z=' + zbig.z);
+      ck.eq(zbig.y, 200, 'Y 高位为 0 时仍为正');
+      ck.eq(readInt16BE(hexToBytes('FF FF'), 0), -1, 'readInt16BE(FFFF) = -1');
+      ck.eq(readUint16BE(hexToBytes('FF FF'), 0), 65535, 'readUint16BE(FFFF) = 65535');
+
+      /* 载荷长度 ≠ 9 → 载荷长度异常，并把原始十六进制打出来（V1.4 无多通道口径） */
+      const bad = parseReport81(hexToBytes('01 02 01 00 64 00 C8 05 DC 00 01 02'));
+      ck.eq(bad.ok, false, '12B 判载荷长度异常');
+      ck.is(/载荷长度异常/.test(bad.error || ''), '错误信息含「载荷长度异常」', bad.error);
+      ck.is(/01 02 01 00 64 00 C8 05 DC 00 01 02/.test(bad.error || ''),
+            '错误信息带原始十六进制', bad.error);
+      ck.eq(bad.target, undefined, '异常时不产出坐标');
       return ck.result();
     }
   },
   {
-    id: 'T3', name: '校验和错 → 计坏帧并重同步，后续好帧仍能解出',
-    exp: '坏帧 1（校验和错 1），随后 1 条好帧被正常解出',
+    id: 'T5', name: '半包：同一帧分 3 段到达（7 / 5 / 8 字节）',
+    exp: '前两段各产出 0 帧且缓冲区残留 7 / 12 字节，第三段产出 1 条好帧、残留 0、坏帧 0',
     check: function () {
       const ck = checker();
-      const data = buildReport81Payload([ch81(0, 0, 0, 0, 0, 0)]);
-      const good = createFrame(0xA3, 0x81, data, 0x0031);
+      const wire = hexToBytes('45 44 00 14 00 01 A3 81 00 09 01 02 01 00 64 00 C8 05 DC DC');
+      const p = new EdvParser();
+      const a = p.feed(wire.subarray(0, 7));
+      const pendA = p.pendingBytes;
+      const b = p.feed(wire.subarray(7, 12));
+      const pendB = p.pendingBytes;
+      const c = p.feed(wire.subarray(12));
+      ck.eq([a.length, b.length, c.length], [0, 0, 1], '三段各自的产出帧数');
+      ck.eq([pendA, pendB, p.pendingBytes], [7, 12, 0], '各阶段缓冲区残留');
+      ck.eq(parseReport81(c[0].data).target.z, 1500, '第三段解出的 z');
+      ck.eq(p.badFrames, 0, '坏帧数');
+      ck.eq(p.stats.noiseBytes, 0, '半包期间不得计入未归属');
+      return ck.result();
+    }
+  },
+  {
+    id: 'T6', name: '粘包：一次 feed 收到 3 帧',
+    exp: '产出 3 条好帧，type 依次 0x01/0x01/0x02，op 依次 A0/A2/A0，len 依次 0/3/0，未归属 0B',
+    check: function () {
+      const ck = checker();
+      const three = concatBytes(OFFICIAL_FRAMES.slice(0, 3).map(r => hexToBytes(r[3])));
+      const p = new EdvParser();
+      const frames = p.feed(three);
+      ck.eq(frames.length, 3, '一次 feed 产出的帧数');
+      ck.eq(frames.map(f => f.type), [0x01, 0x01, 0x02], 'type 顺序');
+      ck.eq(frames.map(f => f.op), [0xA0, 0xA2, 0xA0], 'op 顺序');
+      ck.eq(frames.map(f => f.tlvLen), [0, 3, 0], 'len 顺序');
+      ck.eq(frames.map(f => f.msgId), [1, 1, 1], 'msgid（官方帧都是 0x0001）');
+      ck.eq(unattributedBytes(p, three.length), 0, '未归属字节');
+      return ck.result();
+    }
+  },
+  {
+    id: 'T7', name: '坏校验 → 计坏帧并重同步，后续好帧仍能解出',
+    exp: '坏校验和 1 次、坏帧 1、好帧 1（后续那条官方 SET 0x17 帧），帧头重同步 ≥ 1',
+    check: function () {
+      const ck = checker();
+      const good = hexToBytes('45 44 00 0D 00 01 A1 17 00 02 00 0A 5B');
       const bad = good.slice();
-      bad[bad.length - 2] = bad[bad.length - 2] ^ 0xFF;    // 破坏校验和
-      ck.is(bad[bad.length - 2] !== good[good.length - 2], '校验和字节已改', '改动无效');
+      bad[bad.length - 1] = bad[bad.length - 1] ^ 0xFF;          // 破坏校验和
+      ck.is(bad[bad.length - 1] !== good[good.length - 1], '校验和字节已改', '改动无效');
       const p = new EdvParser();
       const frames = p.feed(concatBytes([bad, good]));
-      ck.eq(frames.length, 1, '完好帧数');
+      ck.eq(frames.length, 1, '好帧数');
       ck.eq(p.stats.badChecksum, 1, '坏校验和计数');
       ck.eq(p.badFrames, 1, '坏帧数');
+      ck.is(p.stats.resyncs >= 1, '帧头重同步次数 ≥ 1', 'resyncs=' + p.stats.resyncs);
+      ck.eq(frames[0].type, 0x17, '恢复后解出的 type');
+      ck.eq(bytesToHex(frames[0].data), '00 0A', '恢复后解出的 Value');
       return ck.result();
     }
   },
   {
-    id: 'T4', name: '帧尾缺失（末字节 0x0A → 0x0B）→ 计帧尾缺失并重同步',
-    exp: '帧尾缺失 1 次，随后 1 条好帧被正常解出',
+    id: 'T8', name: '非法长度（45 44 00 05，长度 5 < 11）→ 只丢 1 字节后重新找到帧头',
+    exp: '非法长度 1 次，随后仍解出 1 条好帧；丢弃 3 个字节即重新对齐，未归属 3B',
     check: function () {
       const ck = checker();
-      const data = buildReport81Payload([ch81(1, 1, 0, 100, 200, 300)]);
-      const good = createFrame(0xA3, 0x81, data, 0x0032);
-      const notail = good.slice(0, good.length - 1);
+      const good = hexToBytes('45 44 00 0B 00 01 A0 23 00 00 58');
+      const junk = hexToBytes('45 44 00 05');
       const p = new EdvParser();
-      const frames = p.feed(concatBytes([notail, Uint8Array.from([0x0B]), good]));
-      ck.eq(frames.length, 1, '完好帧数');
-      ck.eq(p.stats.badTrailer, 1, '帧尾缺失计数');
-      ck.eq(p.stats.badChecksum, 0, '坏校验和计数');
+      const frames = p.feed(concatBytes([junk, good]));
+      ck.eq(frames.length, 1, '好帧数');
+      ck.eq(p.stats.badLength, 1, '非法长度计数');
+      ck.eq(p.badFrames, 1, '坏帧数');
+      ck.eq(p.stats.noiseBytes, 3, '丢弃的字节数（只丢 1 字节后再找帧头）');
+      ck.eq(p.stats.resyncs, 2, '重同步次数（坏帧丢 1B + 丢 3B 噪声块）');
+      ck.eq(frames[0].type, 0x23, '恢复后解出的 type');
       return ck.result();
     }
   },
   {
-    id: 'T5', name: '设备未转义上报（正文含裸 0x0A/0x09）→ 自适应未转义口径',
-    exp: '1 条好帧、basis=raw、rawOnly=是、x=2569，坏帧 0',
+    id: 'T9', name: '帧头前有噪声字节 → 计入未归属并丢弃，帧仍解出',
+    exp: '未归属 = 6 字节且全部计为帧头前噪声；1 条好帧被解出，坏帧 0',
     check: function () {
       const ck = checker();
-      const data = buildReport81Payload([ch81(1, 2, 1, 2569, -100, 500)]);
-      const wire = buildUnescapedFrame(0xA3, 0x81, data, 0x0033);
-      let bare = 0;
-      for (let i = 0; i < wire.length - 1; i++) if (wire[i] === 0x0A) bare++;
-      ck.eq(bare, 1, '正文里的裸 0x0A 个数');
+      const noise = hexToBytes('11 22 33 44 55 66');
+      const wire = hexToBytes('45 44 00 14 00 01 A3 81 00 09 01 02 01 00 64 00 C8 05 DC DC');
       const p = new EdvParser();
-      const frames = p.feed(wire);
-      ck.eq(frames.length, 1, '完好帧数');
-      const f = frames[0] || {};
-      ck.eq(f.basis, 'raw', '还原口径');
-      ck.eq(f.rawOnly, true, 'rawOnly');
-      ck.eq(f.escaped, 0, '转义序列数');
-      const rep = parseReport81(f.data);
-      ck.eq(rep.channels[0].x, 2569, 'x');
-      ck.eq(p.badFrames, 0, '坏帧数');
+      const frames = p.feed(concatBytes([noise, wire]));
+      ck.eq(frames.length, 1, '好帧数');
+      ck.eq(p.stats.noiseBytes, 6, '帧头前噪声字节');
+      ck.eq(p.badFrames, 0, '坏帧数（噪声不是坏帧）');
+      ck.eq(unattributedBytes(p, noise.length + wire.length), 6, '未归属字节');
+      ck.eq(p.stats.attributedBytes, wire.length, '已归属字节只算好帧');
+      ck.eq(parseReport81(frames[0].data).target.x, 100, '解出的 x');
       return ck.result();
     }
   },
   {
-    id: 'T6', name: '半包（同一帧分 3 段到达，含切在转义序列中间）',
-    exp: '前两段不产出帧，第三段产出 1 条好帧，坏帧 0',
+    id: 'T10', name: '参数编解码往返：0x12 / 0x17 / 0x25 / 0x26（+ 0x01 / 0x02）',
+    exp: '0x12=2→2；0x17=10→10（1000 ms）；0x25=2500→2500；0x26=[1200,2300]；' +
+         '0x01 厂商ID="ED"；0x02 设备ID/固件',
     check: function () {
       const ck = checker();
-      const data = buildReport81Payload([ch81(1, 2, 1, 2569, -100, 500)]);
-      const wire = createFrame(0xA3, 0x81, data, 0x0034);
-      const p = new EdvParser();
-      const a = p.feed(wire.subarray(0, 10));
-      const pending1 = p.pendingBytes;
-      const b = p.feed(wire.subarray(10, 11));
-      const c = p.feed(wire.subarray(11));
-      ck.eq(a.length, 0, '第 1 段产出的帧数');
-      ck.eq(b.length, 0, '第 2 段产出的帧数');
-      ck.eq(c.length, 1, '第 3 段产出的帧数');
-      ck.eq(pending1, 10, '第 1 段后缓冲区残留字节');
-      ck.eq(p.pendingBytes, 0, '全部到达后缓冲区残留字节');
-      ck.eq(p.badFrames, 0, '坏帧数');
+      ck.eq(decodeParam(CFG.TYPE.LOCK_TIME, encodeUint16(2)).value, 2, '0x12 往返');
+      const fq = decodeParam(CFG.TYPE.REPORT_FREQ, encodeUint16(10));
+      ck.eq(fq.value, 10, '0x17 往返');
+      ck.is(/1000 ms/.test(fq.text), '0x17 文案换算出 1000 ms', fq.text);
+      ck.eq(decodeParam(CFG.TYPE.MOUNT_HEIGHT, encodeUint16(2500)).value, 2500, '0x25 往返');
+      const dh = decodeParam(CFG.TYPE.DETECT_HEIGHT,
+                             concatBytes([encodeUint16(1200), encodeUint16(2300)]));
+      ck.eq(dh.value, [1200, 2300], '0x26 往返');
+      const pi = decodeParam(CFG.TYPE.PRODUCT_INFO, hexToBytes('00 45 44'));
+      ck.eq([pi.ok, pi.value], [true, 0], '0x01 解析');
+      ck.is(/厂商ID "ED"/.test(pi.text), '0x01 厂商ID 文本', pi.text);
+      const mi = decodeParam(CFG.TYPE.MODULE_INFO,
+        hexToBytes('45 44 51 31 35 32 5F 56 42 2C 56 32 2E 30 2E 30'));
+      ck.eq([mi.ok, mi.value.id, mi.value.version], [true, 'EDQ152_VB', 'V2.0.0'], '0x02 解析');
+      /* 长度不符时必须标 ok:false，不能猜值 */
+      ck.eq(decodeParam(CFG.TYPE.MOUNT_HEIGHT, hexToBytes('09')).ok, false, '0x25 长度异常');
       return ck.result();
     }
   },
   {
-    id: 'T7', name: '粘包（一次收到 3 帧）',
-    exp: '一次 feed 产出 3 条好帧、msgid 依次 0x41/0x42/0x43、坏帧 0',
+    id: 'T11', name: '0x27 检测范围编解码往返（8 × int16，含负值）',
+    exp: '官方 F4 48 0B B8 … → 运动/存在均为 -3000~3000；自定义范围（含负值）编解码往返一致',
     check: function () {
       const ck = checker();
-      const d1 = buildReport81Payload([ch81(1, 1, 0, 100, 100, 2000)]);
-      const d2 = buildReport81Payload([ch81(0, 0, 0, 0, 0, 0)]);
-      const d3 = buildReport81Payload([ch81(1, 2, 2, -1500, 800, 2400), ch81(0, 0, 0, 0, 0, 0)]);
-      const all = concatBytes([createFrame(0xA3, 0x81, d1, 0x41),
-                               createFrame(0xA3, 0x81, d2, 0x42),
-                               createFrame(0xA3, 0x81, d3, 0x43)]);
-      const p = new EdvParser();
-      const frames = p.feed(all);
-      ck.eq(frames.length, 3, '一次 feed 产出的帧数');
-      ck.eq(frames.map(f => f.msgId), [0x41, 0x42, 0x43], 'msgid 顺序');
-      ck.eq(frames.map(f => f.data.length), [9, 9, 18], '各帧 tlv_len');
-      ck.eq(p.badFrames, 0, '坏帧数');
-      return ck.result();
-    }
-  },
-  {
-    id: 'T8', name: '0x81 单通道 9 B：字段顺序 [有人][状态][方向][x][y][z]',
-    exp: 'count=1、stride=9、presence=1 state=1 direction=2 x=1234 y=-567 z=42',
-    check: function () {
-      const ck = checker();
-      const data = hexToBytes('01 01 02 04 D2 FD C9 00 2A');
-      const data2 = buildReport81Payload([ch81(1, 1, 2, 1234, -567, 42)]);
-      ck.eq(bytesToHex(data), bytesToHex(data2), '构造器与手写载荷一致');
-      const rep = parseReport81(data);
-      ck.eq(rep.ok, true, '解析通过');
-      ck.eq(rep.stride, 9, '每通道字节数');
-      const c = rep.channels[0] || {};
-      ck.eq([rep.count, c.presence, c.state, c.direction, c.x, c.y, c.z],
-            [1, 1, 1, 2, 1234, -567, 42], '字段顺序与取值');
-      return ck.result();
-    }
-  },
-  {
-    id: 'T9', name: '0x81 多通道（2 通道 = 18 B）',
-    exp: 'count=2、两通道字段各自正确、tlv_len=18',
-    check: function () {
-      const ck = checker();
-      const data = buildReport81Payload([ch81(1, 2, 1, 1000, -2000, 2500),
-                                         ch81(0, 0, 0, -3000, 3000, 0)]);
-      ck.eq(data.length, 18, '载荷字节数');
-      const rep = parseReport81(data);
-      ck.eq(rep.count, 2, '通道数');
-      ck.eq([rep.channels[0].x, rep.channels[0].y, rep.channels[0].z], [1000, -2000, 2500],
-            '通道 0 坐标');
-      ck.eq([rep.channels[1].presence, rep.channels[1].x, rep.channels[1].y],
-            [0, -3000, 3000], '通道 1 字段');
-      const p = new EdvParser();
-      const frames = p.feed(createFrame(0xA3, 0x81, data, 0x0044));
-      ck.eq(frames[0].data.length, 18, '帧内 tlv_len');
-      return ck.result();
-    }
-  },
-  {
-    id: 'T10', name: 'presence=1 与 presence=0 的判定与文案',
-    exp: 'presence=1 → 有人 / 真帧；presence=0 → 无人 / 真帧（静默窗内）',
-    check: function () {
-      const ck = checker();
-      const win = silenceWindowMs(10);
-      ck.eq(win, 8000, '静默窗 max(3×1000ms, 8s)');
-      const on = evaluatePresence(1000, { at: 900, presence: 1 }, 10);
-      ck.eq([on.presence, on.basis, on.word], [1, 'frame', '有人'], 'presence=1');
-      const off = evaluatePresence(1000, { at: 900, presence: 0 }, 10);
-      ck.eq([off.presence, off.basis, off.word], [0, 'frame', '无人'], 'presence=0');
-      ck.eq(off.silent, false, '静默窗内 silent');
-      return ck.result();
-    }
-  },
-  {
-    id: 'T11', name: 'x / y / z 负坐标（int16 大端有符号）',
-    exp: 'x=-3000 (0xF448)、y=-1 (0xFFFF)、z=-250 (0xFF06)',
-    check: function () {
-      const ck = checker();
-      const data = buildReport81Payload([ch81(1, 1, 0, -3000, -1, -250)]);
-      ck.eq(bytesToHex(data), '01 01 00 F4 48 FF FF FF 06', '还原后载荷');
-      const rep = parseReport81(data);
-      const c = rep.channels[0];
-      ck.eq([c.x, c.y, c.z], [-3000, -1, -250], '负坐标解出');
-      ck.eq([readInt16BE(hexToBytes('F4 48'), 0), readInt16BE(hexToBytes('80 00'), 0)],
-            [-3000, -32768], 'readInt16BE 边界');
-      return ck.result();
-    }
-  },
-  {
-    id: 'T12', name: 'tlv_len=8（旧 7 B / 8 B 口径）→ 判载荷口径异常并提示',
-    exp: '解析失败、错误信息含「9 的整数倍」与「旧 7 B/8 B 口径」、不产出任何通道',
-    check: function () {
-      const ck = checker();
-      const old = hexToBytes('01 00 01 01 00 01 F4 00');     // 旧口径 8 B
-      const rep = parseReport81(old);
-      ck.eq(rep.ok, false, '是否判为载荷异常');
-      ck.is(/9 的整数倍/.test(rep.error || ''), '错误信息含「9 的整数倍」', rep.error);
-      ck.is(/旧 7 B\/8 B 口径/.test(rep.error || ''), '错误信息提示旧口径', rep.error);
-      ck.eq(rep.channels, undefined, '是否产出通道数据');
-      /* 帧本身合法（长度/校验和都对）→ 好帧 + 坏载荷，由界面计「载荷口径异常」 */
-      const p = new EdvParser();
-      const frames = p.feed(createFrame(0xA3, 0x81, old, 0x0055));
-      ck.eq(frames.length, 1, '帧层仍算好帧');
-      ck.eq(frames[0].data.length, 8, '帧内 tlv_len');
-      return ck.result();
-    }
-  },
-  {
-    id: 'T13', name: '发送 >50 B 拒发（0x29 屏蔽区每帧最多 2 个）',
-    exp: '12+38=50 B 允许；39 B 被拒；0x29 三个屏蔽区(40B) 被拒、两个(27B) 允许',
-    check: function () {
-      const ck = checker();
-      ck.eq(maxHostPayloadLen(), 38, '主机→模组载荷上限');
-      let okAtLimit = true;
-      try { createFrame(0xA1, 0x29, new Uint8Array(38), 1); } catch (e) { okAtLimit = false; }
-      ck.eq(okAtLimit, true, '12+38=50 B 是否允许');
-      let overMsg = '';
-      try { createFrame(0xA1, 0x29, new Uint8Array(39), 1); } catch (e) { overMsg = e.message || ''; }
-      ck.is(/50 B/.test(overMsg), '39 B 被拒且提示 50 B', overMsg);
-      const zone2 = new Uint8Array(1 + 2 * 13);     // 数量 2 + 2×13 = 27 B
-      const zone3 = new Uint8Array(1 + 3 * 13);     // 数量 3 + 3×13 = 40 B → 52 B 整帧
-      let z2ok = true, z3msg = '';
-      try { createFrame(0xA1, 0x29, zone2, 2); } catch (e) { z2ok = false; }
-      try { createFrame(0xA1, 0x29, zone3, 3); } catch (e) { z3msg = e.message || ''; }
-      ck.eq(z2ok, true, '两个屏蔽区（27B）是否允许');
-      ck.is(/50 B/.test(z3msg) && /2 个/.test(z3msg), '三个屏蔽区被拒且提示每帧最多 2 个', z3msg);
-      return ck.result();
-    }
-  },
-  {
-    id: 'T14', name: '0x80 能量帧（80 B = 40 运动 + 40 静止）与口径异常',
-    exp: 'gates=40、motion[0]=0 motion[39]=39、still[0]=100 still[39]=61；79B 判异常且不抛错',
-    check: function () {
-      const ck = checker();
-      const motion = [], still = [];
-      for (let i = 0; i < 40; i++) { motion.push(i); still.push(100 - i); }
-      const data = buildReport80Payload(motion, still);
-      ck.eq(data.length, 80, '载荷字节数');
-      const rep = parseReport80(data);
-      ck.eq(rep.ok, true, '解析通过');
-      ck.eq([rep.gates, rep.motion[0], rep.motion[39], rep.still[0], rep.still[39]],
-            [40, 0, 39, 100, 61], '能量数组');
-      let threw = false, short = null;
-      try { short = parseReport80(data.subarray(0, 79)); } catch (e) { threw = true; }
-      ck.eq(threw, false, '79B 是否抛错（必须优雅降级）');
-      ck.eq(short && short.ok, false, '79B 判为口径异常');
-      const p = new EdvParser();
-      /* 0x80 是模组→主机方向（92 B 整帧），不受主机→模组 50 B 上限约束 */
-      const frames = p.feed(createDeviceFrame(0xA3, 0x80, data, 0x0066));
-      ck.eq([frames.length, frames[0].type, frames[0].data.length], [1, 0x80, 80], '帧层');
-      return ck.result();
-    }
-  },
-  {
-    id: 'T15', name: '双口径自适应计数（无转义序列的帧 / 含转义序列的帧 / 歧义为 0）',
-    exp: '无转义序列的帧计「未转义口径」；含 09 01 的帧计「已转义口径」；口径歧义 0；' +
-         '未转义帧在 09 xx 之后被切断时四种切法都必须解出 1 帧且 badEscape=0',
-    check: function () {
-      const ck = checker();
-      /* 挑一条正文完全不含 0x09/0x0A 的帧（GET 0x02，msgid 0x0102） */
-      const plainWire = createFrame(0xA0, 0x02, null, 0x0102);
-      const plainBody = unescapeBytes(plainWire.subarray(0, plainWire.length - 1));
-      ck.eq(plainBody.escaped, 0, '该帧正文里的转义序列数');
-      const p1 = new EdvParser();
-      p1.feed(plainWire);
-      ck.eq([p1.stats.framesRaw, p1.stats.framesEscaped, p1.stats.ambiguous],
-            [1, 0, 0], '无转义序列的帧');
-      /* 正文含 0x0A 的 SET 帧（value 就是 0x0A）→ 必须走已转义口径 */
-      const escWire = createFrame(0xA1, 0x17, Uint8Array.from([0x0A]), 0x0103);
-      const p2 = new EdvParser();
-      p2.feed(escWire);
-      ck.eq([p2.stats.framesRaw, p2.stats.framesEscaped, p2.stats.ambiguous],
-            [0, 1, 0], '含转义序列的帧');
+      const off = hexToBytes('F4 48 0B B8 F4 48 0B B8 F4 48 0B B8 F4 48 0B B8');
+      const r = parseDetectRange(off);
+      ck.eq(r.ok, true, '官方 0x27 解析通过');
+      ck.eq([r.motion.minX, r.motion.maxX, r.motion.minY, r.motion.maxY],
+            [-3000, 3000, -3000, 3000], '运动范围');
+      ck.eq([r.presence.minX, r.presence.maxX, r.presence.minY, r.presence.maxY],
+            [-3000, 3000, -3000, 3000], '存在范围');
+      ck.eq(bytesToHex(packDetectRange(r)), bytesToHex(off), '官方值往返');
 
-      /* ---- 附加回归（裁定不对称）：合法【未转义】帧在「09 xx」处被切断 ----
-         设备未按转义规则上报时，正文里的裸 09 xx 会让「已转义」口径判 badEscape；
-         但此刻「未转义」口径只是还没收齐（NEED_MORE）—— 绝不能因此丢弃字节、
-         误计 badEscape。同一帧按 [20,1] / [12,9] / [1×21] / 整帧一次 四种切法喂入，
-         必须全部解出 1 帧、badEscape = 0、x 值正确。 */
-      const rawData = buildReport81Payload([ch81(1, 2, 1, 0x090A, -100, 500)]);
-      ck.eq(bytesToHex(rawData), '01 02 01 09 0A FF 9C 01 F4', '未转义帧载荷（x=0x090A=2314）');
-      const rawWire = buildUnescapedFrame(0xA3, 0x81, rawData, 0x0104);
-      ck.eq(rawWire.length, 21, '未转义帧线上字节数（12+9，转义 0 处）');
-      const chunkBy = (bytes, sizes) => {
-        const out = [];
-        let at = 0;
-        for (const n of sizes) { out.push(bytes.subarray(at, Math.min(at + n, bytes.length))); at += n; }
-        if (at < bytes.length) out.push(bytes.subarray(at));
-        return out;
-      };
-      const cuts = [
-        ['[20,1]', [20, 1]],
-        ['[12,9]', [12, 9]],
-        ['[1×21]', new Array(rawWire.length).fill(1)],
-        ['整帧一次', [rawWire.length]]
-      ];
-      const detail = [];
-      for (const [label, sizes] of cuts) {
-        const p = new EdvParser();
-        const frames = feedAll(p, chunkBy(rawWire, sizes));
-        const f = frames[0];
-        const x = f ? parseReport81(f.data).channels[0].x : null;
-        detail.push(label + ' → ' + frames.length + ' 帧 / badEscape ' + p.stats.badEscape +
-                    ' / 未归属 ' + p.stats.noiseBytes + 'B / x=' + x);
-        ck.eq([label, frames.length, p.stats.badEscape, p.stats.noiseBytes, x],
-              [label, 1, 0, 0, 2314], '切法 ' + label + ' 的解帧结果');
-      }
-      ck.eq(detail, ['[20,1] → 1 帧 / badEscape 0 / 未归属 0B / x=2314',
-                     '[12,9] → 1 帧 / badEscape 0 / 未归属 0B / x=2314',
-                     '[1×21] → 1 帧 / badEscape 0 / 未归属 0B / x=2314',
-                     '整帧一次 → 1 帧 / badEscape 0 / 未归属 0B / x=2314'],
-            '四种切法的逐项明细');
+      const custom = { motion: { minX: -1500, maxX: 2200, minY: -3000, maxY: 1000 },
+                       presence: { minX: -800, maxX: 800, minY: -2600, maxY: 600 } };
+      const back = parseDetectRange(packDetectRange(custom));
+      ck.eq(back.motion, custom.motion, '运动范围往返');
+      ck.eq(back.presence, custom.presence, '存在范围往返');
+      ck.eq(decodeParam(CFG.TYPE.DETECT_RANGE, packDetectRange(custom)).ok, true, '0x27 展示解码');
+      ck.eq(parseDetectRange(hexToBytes('F4 48')).ok, false, '15B 判长度异常');
       return ck.result();
     }
   },
   {
-    id: 'T16', name: '无人静默推断 & 故障是独立状态（静默 ≠ 故障）',
-    exp: '超 max(3×周期,8s) → basis=silence / 无人 / silent=是；链路仍为「正常」；真无帧才判故障',
+    id: 'T12', name: '0x29 屏蔽区编解码往返（官方 ×1 + 自造 ×10）',
+    exp: '官方值 → 1 个屏蔽区 id=1 x=-500~500 y=-500~500 z=0~2000；10 个区打包 131B 并能原样解回；数量 0 = 1B',
+    check: function () {
+      const ck = checker();
+      const one = hexToBytes('01 01 FE 0C 01 F4 FE 0C 01 F4 00 00 07 D0');
+      const z1 = parseMaskZones(one);
+      ck.eq([z1.ok, z1.count], [true, 1], '官方 ×1 解析');
+      ck.eq([z1.zones[0].id, z1.zones[0].minX, z1.zones[0].maxX],
+            [1, -500, 500], '屏蔽区 id / x 范围');
+      ck.eq([z1.zones[0].minY, z1.zones[0].maxY, z1.zones[0].minZ, z1.zones[0].maxZ],
+            [-500, 500, 0, 2000], '屏蔽区 y / z 范围');
+      ck.eq(bytesToHex(packMaskZones(z1.zones)), bytesToHex(one), '官方值往返');
+
+      const ten = [];
+      for (let i = 1; i <= 10; i++) {
+        ten.push({ id: i, minX: -3000 + i * 100, maxX: -2000 + i * 100,
+                   minY: -1000 + i * 50, maxY: 1000 - i * 50,
+                   minZ: 0, maxZ: 200 + i * 100 });
+      }
+      const packed = packMaskZones(ten);
+      ck.eq(packed.length, 131, '10 个屏蔽区载荷字节数 1+10×13');
+      const back = parseMaskZones(packed);
+      ck.eq(back.count, 10, '解回数量');
+      ck.eq(back.zones, ten, '10 个屏蔽区逐字段往返');
+      ck.eq(decodeParam(CFG.TYPE.MASK_ZONE, packed).ok, true, '0x29 展示解码');
+      ck.eq(packMaskZones([]).length, 1, '数量 0 的载荷长度');
+      ck.eq(parseMaskZones(Uint8Array.from([0])).count, 0, '数量 0 解回');
+      ck.eq(parseMaskZones(hexToBytes('0B')).ok, false, '数量 11 判异常');
+      return ck.result();
+    }
+  },
+  {
+    id: 'T13', name: 'SET 0x29 ×10 生成的帧 142 B 必须能发出（V1.4 无 50 B 限制）',
+    exp: '帧长 142 = 11 + 131、长度域 0x008E、校验和自洽；解析回来 Value 131B 且与原载荷一致；' +
+         '142 > 50 说明没有旧口径的 50 B 限制',
+    check: function () {
+      const ck = checker();
+      const zones = [];
+      for (let i = 1; i <= 10; i++) {
+        zones.push({ id: i, minX: -3000, maxX: 3000, minY: -3000, maxY: 3000,
+                     minZ: 0, maxZ: 2000 });
+      }
+      const payload = packMaskZones(zones);
+      const frame = buildSetFrame(CFG.TYPE.MASK_ZONE, payload, 0x0001);
+      ck.eq(frame.length, 142, '整帧字节数');
+      ck.eq((frame[2] << 8) | frame[3], 142, '长度域');
+      ck.eq((frame[8] << 8) | frame[9], 131, 'len 字段');
+      ck.eq(checksum(frame, 0, frame.length - 1), frame[frame.length - 1], '校验和自洽');
+      ck.is(frame.length > 50, '142 B > 50 B（V1.4 没有 50 B 单帧上限）', '帧长 ' + frame.length);
+      const p = new EdvParser();
+      const frames = p.feed(frame);
+      ck.eq(frames.length, 1, '回读解析条数');
+      ck.eq([frames[0].type, frames[0].op, frames[0].tlvLen], [0x29, 0xA1, 131], '帧字段');
+      ck.eq(bytesToHex(frames[0].data), bytesToHex(payload), 'Value 往返一致');
+      ck.eq(p.badFrames, 0, '坏帧数');
+      return ck.result();
+    }
+  },
+  {
+    id: 'T14', name: '5 条演示 SET 与事实包 §5 / V1.4 §4 逐字节一致',
+    exp: '0x17=10 → …00 0A 5B；0x12=1 → …00 01 4D；0x24=0 → …00 5C；' +
+         '0x25=2500 → …09 C4 2C；0x18=1 → …01 51（顺序 17→12→24→25→18）',
+    check: function () {
+      const ck = checker();
+      const plan = buildPresetPlan();
+      ck.eq(plan.map(i => '0x' + hex2(i.type)), ['0x17', '0x12', '0x24', '0x25', '0x18'],
+            '下发顺序');
+      const want = [
+        '45 44 00 0D 00 01 A1 17 00 02 00 0A 5B',
+        '45 44 00 0D 00 01 A1 12 00 02 00 01 4D',
+        '45 44 00 0C 00 01 A1 24 00 01 00 5C',
+        '45 44 00 0D 00 01 A1 25 00 02 09 C4 2C',
+        '45 44 00 0C 00 01 A1 18 00 01 01 51'
+      ];
+      const got = plan.map(i => bytesToHex(buildSetFrame(i.type, i.data, 0x0001)));
+      ck.eq(got, want, '5 条演示 SET 字节');
+      /* 与 §4 第 04 组「SET 0x17 = 0A」同一字节：说明 Value 里的 0A 是原值、长度仍是 11+2 */
+      ck.eq(got[0], '45 44 00 0D 00 01 A1 17 00 02 00 0A 5B', '0x17=10 与官方示例同字节');
+      ck.eq(got[3], '45 44 00 0D 00 01 A1 25 00 02 09 C4 2C', '0x25=2500（09 C4 原值）');
+      return ck.result();
+    }
+  },
+  {
+    id: 'T15', name: '0x1F 只能写 1（写 2 报错），0x1A 同理',
+    exp: 'buildSetFrame(0x1F,[01]) 生成 45 44 00 0C 00 01 A1 1F 00 01 01 58；' +
+         'buildSetFrame(0x1F,[02]) 抛错且信息含「只能写 1」；0x1A 写 0 同样抛错',
+    check: function () {
+      const ck = checker();
+      const ok1 = bytesToHex(buildSetFrame(CFG.TYPE.FACTORY_RESET, Uint8Array.from([1]), 0x0001));
+      ck.eq(ok1, '45 44 00 0C 00 01 A1 1F 00 01 01 58', '0x1F=1 生成帧');
+      let msg2 = '';
+      try { buildSetFrame(CFG.TYPE.FACTORY_RESET, Uint8Array.from([2]), 0x0001); }
+      catch (e) { msg2 = e && e.message ? e.message : String(e); }
+      ck.is(/只能写 1/.test(msg2), '写 2 被拒且提示「只能写 1」', msg2 || '未抛错');
+      let msgA = '';
+      try { buildSetFrame(CFG.TYPE.FORCE_LEAVE, Uint8Array.from([0]), 0x0001); }
+      catch (e) { msgA = e && e.message ? e.message : String(e); }
+      ck.is(/只能写 1/.test(msgA), '0x1A 写 0 被拒', msgA || '未抛错');
+      /* 其它取值约束也必须在发送前挡住 */
+      let msgRf = '';
+      try { buildSetFrame(CFG.TYPE.RF_MODE, Uint8Array.from([2]), 0x0001); }
+      catch (e) { msgRf = e && e.message ? e.message : String(e); }
+      ck.is(/取值应为 0 或 1/.test(msgRf), '0x18 写 2 被拒', msgRf || '未抛错');
+      let msgH = '';
+      try { buildSetFrame(CFG.TYPE.MOUNT_HEIGHT, encodeUint16(800), 0x0001); }
+      catch (e) { msgH = e && e.message ? e.message : String(e); }
+      ck.is(/1200~5000/.test(msgH), '0x25 写 800 被拒（低于 1200）', msgH || '未抛错');
+      return ck.result();
+    }
+  },
+  {
+    id: 'T16', name: '静默推断：超窗显示「按静默推断」，且与「故障」是两种独立状态',
+    exp: '超 max(3×周期,8s) → basis=silence / 无人 / silent=是 / 文案含「按静默推断」；' +
+         '此时链路仍「正常」（不是故障）；只有「一个合法帧都没有」才判故障',
     check: function () {
       const ck = checker();
       const silent = evaluatePresence(10000, { at: 1000, presence: 0 }, 10);
       ck.eq([silent.presence, silent.basis, silent.word, silent.silent],
             [0, 'silence', '无人', true], '超窗静默');
-      ck.eq(silent.windowMs, 8000, '静默窗');
+      ck.eq(silent.windowMs, 8000, '静默窗 max(3×1000ms, 8s)');
+      ck.is(/按静默推断/.test(silent.basisText), '判定依据文案含「按静默推断」', silent.basisText);
+
       const linkOk = evaluateLink(10000, { connected: true, totalBytes: 200, frames: 1,
                                            badFrames: 0, period100ms: 10, openedAt: 0 });
       ck.eq([linkOk.fault, linkOk.faultText], ['none', '正常'], '静默但链路正常（不是故障）');
+      ck.is(!/故障/.test(silent.basisText), '静默文案不得写成故障', silent.basisText);
+
       const linkBad = evaluateLink(10000, { connected: true, totalBytes: 200, frames: 0,
                                             badFrames: 0, period100ms: 10, openedAt: 0 });
-      ck.eq([linkBad.fault], ['no-data'], '一个合法帧都没有才判故障');
+      ck.eq(linkBad.fault, 'no-data', '一个合法帧都没有才判故障');
+
       const within = evaluatePresence(5000, { at: 1000, presence: 1 }, 10);
-      ck.eq([within.basis, within.word], ['frame', '有人'], '静默窗内仍按真帧');
+      ck.eq([within.basis, within.word, within.silent], ['frame', '有人', false], '静默窗内仍按真帧');
+      const none = evaluatePresence(5000, null, 10);
+      ck.eq([none.basis, none.presence], ['none', null], '从未收到 0x81');
       return ck.result();
     }
   }
@@ -1894,7 +1905,6 @@ function runSelftestCases() {
   return { pass, total, head, lines, text: head + '\n' + lines.join('\n') };
 }
 // ==== CASES-END ====
-
 /* ==========================================================================
  * 四、运行时状态（页面侧；CORE/CASES 段不含任何 DOM 依赖）
  * ========================================================================== */
@@ -1903,34 +1913,40 @@ const state = {
   port: null, reader: null, writer: null, keepReading: false, connected: false,
   serialSupported: false, portLabel: '', vidpid: '', openedAt: 0,
   /* 计数 */
-  totalBytes: 0, frames: 0, f81: 0, f80: 0, payloadErrors: 0,
+  totalBytes: 0, frames: 0, f81: 0, payloadErrors: 0,
   parser: new EdvParser(),
   /* 参数回读：type -> { data, at, text, ok, timeout, mismatch } */
   params: new Map(),
   readSent: new Set(),
   expectAfterSet: new Map(),   // SET 之后回读比对用的期望字节（type -> Uint8Array）
-  /* 最新上报 */
-  last81: null,        // { at, presence, channels, primary }
-  last80: null,        // { at, motion, still }
-  channels: [],
+  /* 最新上报：0x81 是单目标，不再有通道数组 */
+  last81: null,        // { at, presence, state, direction, x, y, z }
+  trail: [],           // 最近 ≤ CFG.render.trailMax 个落点 { x, y, z, at, presence }
+  /* 设备回读出来的几何（未回读时用协议默认值，并在界面标注「默认值」） */
+  ranges: {
+    motion: { minX: -CFG.defaults.rangeMm, maxX: CFG.defaults.rangeMm,
+              minY: -CFG.defaults.rangeMm, maxY: CFG.defaults.rangeMm },
+    presence: { minX: -CFG.defaults.rangeMm, maxX: CFG.defaults.rangeMm,
+                minY: -CFG.defaults.rangeMm, maxY: CFG.defaults.rangeMm },
+    fromDevice: false
+  },
+  maskZones: [],
+  maskFromDevice: false,
   /* 状态机 */
-  shownPresence: null,       // 界面当前显示（受锁定期约束）
-  lastPresenceValue: null,   // 上一条 0x81 的聚合 presence（真帧口径）
-  lastEventAt: 0,            // 上一条时间线事件的时刻
-  presenceSince: 0,          // 本次状态开始时刻
-  lastSwitchAt: 0,           // 最近一次切换时刻
-  heroHoldUntil: 0,          // 锁定期：这段时间内不翻转大字（避免跨通道抖动）
-  flipsSkipped: 0,
-  events: [],                // 时间线事件（最多 render.timelineMax 条）
+  shownPresence: null,
+  lastPresenceValue: null,
+  lastEventAt: 0,
+  presenceSince: 0,
+  lastSwitchAt: 0,
+  heroHoldUntil: 0,
+  events: [],
   /* 参数口径 */
   period100ms: CFG.defaults.period100ms,
   mountMm: CFG.defaults.mountMm,
-  range: { minX: -CFG.defaults.rangeMm, maxX: CFG.defaults.rangeMm,
-           minY: -CFG.defaults.rangeMm, maxY: CFG.defaults.rangeMm, fromDevice: false },
   /* 时序 */
   lastFrameAt: 0, gapMs: null,
   /* 流程 */
-  writeBusy: false, presetBusy: false, highRiskUnlocked: false,
+  writeBusy: false, highRiskUnlocked: false,
   logPaused: false, themeMode: 'auto',
   lastDrawAt: 0, dirty: true, bootSelftest: null
 };
@@ -1970,27 +1986,25 @@ function logLine(cls, text, ctxText) {
   box.scrollTop = box.scrollHeight;
 }
 
-/** 统计条：总字节 / 帧数 / 0x81 / 0x80 / 坏帧+率 / 未归属+率 / 转义错误 / 口径歧义 / 帧间隔 / 判定依据 */
+/** 统计条：总字节 / 帧数 / 0x81 / 坏帧+率 / 未归属+率 / 校验和错 / 帧头重同步 / 帧间隔 / 判定依据 */
 function updateStats(now) {
   const p = state.parser;
   const s = p.stats;
-  const attributed = s.attributedBytes || 0;
-  const pendingBytes = p.pendingBytes;
-  const unattributed = Math.max(0, state.totalBytes - attributed - pendingBytes);
+  const unattributed = unattributedBytes(p, state.totalBytes);
   $('st-bytes').textContent = String(state.totalBytes);
-  $('st-frames').textContent = String(p.stats.goodFrames);
+  $('st-frames').textContent = String(s.goodFrames);
   $('st-f81').textContent = String(state.f81);
-  $('st-f80').textContent = String(state.f80);
   $('st-bad').textContent = String(p.badFrames);
-  $('st-badrate').textContent = pct1(p.badFrames, p.stats.goodFrames + p.badFrames);
+  $('st-badrate').textContent = pct1(p.badFrames, s.goodFrames + p.badFrames);
   $('st-noise').textContent = String(unattributed);
   $('st-noiserate').textContent = pct1(unattributed, state.totalBytes);
-  $('st-esc').textContent = String(s.badEscape);
-  $('st-amb').textContent = String(s.ambiguous);
+  $('st-ck').textContent = String(s.badChecksum);
+  $('st-resync').textContent = String(s.resyncs);
   $('st-gap').textContent = (state.gapMs === null ? '—' : Math.round(state.gapMs) + ' ms');
 
   const ev = evaluatePresence(now, state.last81, state.period100ms);
-  $('st-basis').textContent = ev.basis === 'frame' ? '真帧' : (ev.basis === 'silence' ? '超时推断' : '—');
+  $('st-basis').textContent = ev.basis === 'frame' ? '真帧'
+    : (ev.basis === 'silence' ? '超时推断' : '—');
   $('st-basischip').classList.toggle('alert', ev.silent);
 
   $('st-badchip').classList.toggle('alert', p.badFrames > 0);
@@ -1998,21 +2012,20 @@ function updateStats(now) {
 }
 
 /* ==========================================================================
- * 六、① 大状态卡：有人/无人 + 静止/运动 + 靠近/远离 + 持续时长 + 最近切换
- *    锁定期（照 gesture.html 的写法）：切换后 HOLD_MS 内不重复翻转大字，
- *    但解析与统计照常更新 —— 锁的是「展示」，不是「数据」。
+ * 六、① 大状态卡：有人/无人 + 静止/运动 + 靠近/远离 + 坐标 + 持续时长
+ *    锁定期：切换后 HOLD_MS 内不重复翻转大字，但解析与统计照常更新 ——
+ *    锁的是「展示」，不是「数据」。
  * ========================================================================== */
 const HOLD_MS = 700;
 function updateHero(now) {
   const ev = evaluatePresence(now, state.last81, state.period100ms);
-  const ch = state.last81 && state.last81.primary;
+  const t = state.last81;
 
-  /* 大字与状态标签：presentes 由状态机给出，静默推断时强制「无人」但不判故障 */
   if (ev.presence !== null) {
     const changed = state.shownPresence !== ev.presence;
     if (changed) {
       if (now < state.heroHoldUntil) {
-        state.flipsSkipped++;
+        /* 锁定期内不翻转 */
       } else {
         state.shownPresence = ev.presence;
         state.presenceSince = now;
@@ -2022,28 +2035,32 @@ function updateHero(now) {
   }
 
   const word = $('h-word');
+  const unit = $('h-unit');
   const num = $('heroNum');
   if (ev.presence === null) {
     word.textContent = '等待数据';
+    unit.textContent = '';
     num.className = 'hero-num dim';
     $('h-presence').className = 'tag off';
     $('h-presence').textContent = '无数据';
   } else {
     const shown = state.shownPresence === null ? ev.presence : state.shownPresence;
     word.textContent = shown === 1 ? '有人' : '无人';
+    /* 静默推断时明确标注依据，绝不把推断写成「确证无人」 */
+    unit.textContent = ev.basis === 'silence' ? '按静默推断' : '';
     num.className = 'hero-num' + (shown === 1 ? ' on' : '');
-    $('h-presence').className = 'tag ' + (shown === 1 ? 'ok' : 'off');
+    $('h-presence').className = 'tag ' + (shown === 1 ? 'ok' : (ev.basis === 'silence' ? 'warn' : 'off'));
     $('h-presence').textContent = shown === 1 ? '有人' : '无人';
   }
 
   /* 静止/运动、靠近/远离（来自 0x81 第 2、3 字节；静默推断时二者无意义） */
   const mTag = $('h-motion');
   const dTag = $('h-dir');
-  if (ch && ev.basis === 'frame') {
-    mTag.className = 'tag ' + (ch.state === 2 ? 'info' : (ch.state === 1 ? 'ok' : 'off'));
-    mTag.textContent = '静止/运动 ' + (CFG.STATE_NAMES[ch.state] || ('未知 ' + ch.state));
-    dTag.className = 'tag ' + (ch.direction === 1 || ch.direction === 2 ? 'info' : 'off');
-    dTag.textContent = '靠近/远离 ' + (CFG.DIR_NAMES[ch.direction] || ('未知 ' + ch.direction));
+  if (t && ev.basis === 'frame') {
+    mTag.className = 'tag ' + (t.state === 2 ? 'info' : (t.state === 1 ? 'ok' : 'off'));
+    mTag.textContent = '静止/运动 ' + (CFG.STATE_NAMES[t.state] || ('未知 ' + t.state));
+    dTag.className = 'tag ' + (t.direction === 1 || t.direction === 2 ? 'info' : 'off');
+    dTag.textContent = '靠近/远离 ' + (CFG.DIR_NAMES[t.direction] || ('未知 ' + t.direction));
   } else {
     mTag.className = 'tag off';
     mTag.textContent = '静止/运动 —';
@@ -2051,7 +2068,7 @@ function updateHero(now) {
     dTag.textContent = '靠近/远离 —';
   }
 
-  /* 判定依据 + 链路故障（两个独立状态） */
+  /* 判定依据 + 链路（两个独立状态：静默 ≠ 故障） */
   const bTag = $('h-basis');
   bTag.className = 'tag ' + (ev.basis === 'frame' ? 'ok' : (ev.basis === 'silence' ? 'warn' : 'off'));
   bTag.textContent = '判定依据 ' + (ev.basis === 'frame' ? '真帧'
@@ -2066,18 +2083,13 @@ function updateHero(now) {
   fTag.textContent = '链路 ' + (link.fault === 'none'
     ? (state.connected ? '正常' : '未连接') : link.faultText);
 
-  /* 坐标与通道 */
-  if (ch) {
-    $('h-chan').textContent = '#' + (ch.index !== undefined ? ch.index : '—');
-    $('h-x').textContent = String(ch.x);
-    $('h-y').textContent = String(ch.y);
-    $('h-z').textContent = String(ch.z);
-    const valid = state.channels.filter(c => c.presence === 1).length;
-    $('h-valid').textContent = valid + '/' + state.channels.length + ' 有人';
+  /* 坐标（单目标） */
+  if (t) {
+    $('h-x').textContent = String(t.x);
+    $('h-y').textContent = String(t.y);
+    $('h-z').textContent = String(t.z);
   } else {
-    $('h-chan').textContent = '—';
     $('h-x').textContent = '—'; $('h-y').textContent = '—'; $('h-z').textContent = '—';
-    $('h-valid').textContent = '—';
   }
 
   /* 口径筹码 */
@@ -2087,8 +2099,12 @@ function updateHero(now) {
   const tm = state.params.get(CFG.TYPE.TRIGGER_MODE);
   $('h-mode').textContent = tm && tm.ok
     ? ((CFG.TRIGGER_MODE_NAMES[tm.data[0]] || '未知') + '（' + tm.data[0] + '）') : '—';
-  const dbg = state.params.get(CFG.TYPE.DEBUG_MODE);
-  $('h-debug').textContent = dbg && dbg.ok ? (dbg.data[0] === 1 ? '开（1）' : '关（0）') : '—';
+  const rf = state.params.get(CFG.TYPE.RF_MODE);
+  const rfOff = !!(rf && rf.ok && rf.data[0] === 0);
+  $('h-rf').textContent = rf && rf.ok ? (rfOff ? '已关闭（0）' : '正常（1）') : '—';
+  $('h-rfchip').className = 'kvchip' + (rfOff ? ' bad' : '');
+  const mi = state.params.get(CFG.TYPE.MODULE_INFO);
+  $('h-fw').textContent = (mi && mi.ok && mi.value && mi.value.version) ? mi.value.version : '—';
 
   /* 持续时长与最近切换 */
   if (state.last81) {
@@ -2100,93 +2116,37 @@ function updateHero(now) {
   $('h-switch').textContent = state.lastSwitchAt ? clockLabel(state.lastSwitchAt) : '—';
   $('h-last81').textContent = state.last81 ? (fmtSec(ev.sinceLastMs) + '前') : '—';
 
-  /* 口径提示（静默不是故障，必须说清楚） */
+  /* 口径提示：静默不是故障，也不等于确证无人 */
   const note = $('h-note');
   if (ev.basis === 'silence') {
     note.className = 'hero-note warn';
     note.innerHTML = '无人（<b>按静默推断</b>）：已 ' + fmtSec(ev.sinceLastMs) +
       ' 未收到 0x81，超过静默窗 ' + (ev.windowMs / 1000).toFixed(1) +
-      ' s = max(3×上报周期, 8 s)。协议是「触发有人后每 N 周期上报」，<b>无人期间可能完全静默</b>，' +
-      '这<b>不是设备故障</b>（故障状态见右侧「链路」标签）。<br />' +
-      '<b>若刚刚发生过运动触发，请勿仅凭静默判定无人</b>——0x24 默认是运动触发，' +
-      '有人但完全静止时也可能停止上报（待实测）。';
+      ' s = max(3×上报周期, 8 s)。协议是「<b>触发有人后</b>每 N 周期上报」，无人期可能完全静默；' +
+      '因此两种原因都会长这样：① 真的无人；② 有人但完全静止、没被运动触发（0x24 默认「正常运动」）。' +
+      '<br /><b>若刚刚发生过运动触发，请勿仅凭静默判定无人</b>；这<b>不是设备故障</b>' +
+      '（故障见右侧「链路」标签，两者是独立状态）。';
+  } else if (rfOff) {
+    note.className = 'hero-note err';
+    note.textContent = '射频已关闭（0x18 = 0）：雷达不会产生任何上报，界面会一直停在「等待数据」。' +
+      '这不是链路故障 —— 需要恢复请下发 0x18 = 1。';
   } else if (link.fault !== 'none') {
     note.className = 'hero-note err';
     note.textContent = '链路异常：' + link.faultText + '。请查 H3 插接、USB 数据线、波特率 256000。';
   } else if (ev.basis === 'frame') {
     note.className = 'hero-note';
     note.innerHTML = '判定依据：<b>真帧</b>（' + fmtSec(ev.sinceLastMs) + '前收到 0x81）。' +
-      '每通道 9 B：[有人][状态][方向][x][y][z]，z 有效范围由挂高 0x25 = ' + state.mountMm + ' mm 决定。';
+      '0x81 固定 9 B 单目标：[有人][状态][方向][X int16][Y int16][Z uint16]，' +
+      'Z 是无符号，有效范围由挂高 0x25 = ' + state.mountMm + ' mm 决定。';
   } else {
     note.className = 'hero-note';
-    note.innerHTML = '协议口径：触发有人后按 0x17 周期上报 0x81；无人期间<b>可能完全静默</b>。';
+    note.innerHTML = '协议口径：<b>触发有人后</b>按 0x17 周期上报 0x81；无人期间<b>可能完全静默</b>。';
   }
 }
 
 /* ==========================================================================
- * 七、② 40 个距离门能量条（0x80）：运动 / 静止 双色并列
- *    收不到 0x80 → 能量区显示降级提示，其余三块照常工作（不报错、不卡住）
- * ========================================================================== */
-function buildEnergyGrid() {
-  const grid = $('energyGrid');
-  grid.innerHTML = '';
-  for (let i = 1; i <= P.ch80Gates; i++) {
-    const gate = document.createElement('div');
-    gate.className = 'eg-gate';
-    gate.title = '距离门 ' + i + '（门宽随雷达配置，未实测）';
-    const m = document.createElement('div');
-    m.className = 'eg-bar motion';
-    m.id = 'eg-m-' + i;
-    const s = document.createElement('div');
-    s.className = 'eg-bar still';
-    s.id = 'eg-s-' + i;
-    gate.appendChild(m);
-    gate.appendChild(s);
-    grid.appendChild(gate);
-  }
-  const axis = $('egXAxis');
-  axis.innerHTML = '';
-  for (let i = 1; i <= P.ch80Gates; i++) {
-    const d = document.createElement('div');
-    d.className = 'eg-xlab';
-    d.textContent = (i % 5 === 0 || i === 1) ? String(i) : '';
-    axis.appendChild(d);
-  }
-}
-
-function renderEnergy() {
-  const empty = $('energyEmpty');
-  if (!state.last80) {
-    empty.hidden = false;
-    for (let i = 1; i <= P.ch80Gates; i++) {
-      const m = $('eg-m-' + i), s = $('eg-s-' + i);
-      if (m) m.style.height = '0%';
-      if (s) s.style.height = '0%';
-    }
-    $('energyMeta').textContent = '尚未收到 0x80';
-    return;
-  }
-  empty.hidden = true;
-  const { motion, still } = state.last80;
-  for (let i = 0; i < P.ch80Gates; i++) {
-    const m = $('eg-m-' + (i + 1)), s = $('eg-s-' + (i + 1));
-    if (m) { m.style.height = Math.max(0, Math.min(100, motion[i])) + '%'; }
-    if (s) { s.style.height = Math.max(0, Math.min(100, still[i])) + '%'; }
-  }
-  let maxM = 0, maxS = 0, argM = 0, argS = 0;
-  for (let i = 0; i < P.ch80Gates; i++) {
-    if (motion[i] > maxM) { maxM = motion[i]; argM = i + 1; }
-    if (still[i] > maxS) { maxS = still[i]; argS = i + 1; }
-  }
-  $('energyMeta').textContent = '运动峰值 ' + maxM + '@门' + argM +
-    ' · 静止峰值 ' + maxS + '@门' + argS +
-    ' · ' + fmtSec(Date.now() - state.last80.at) + '前';
-  const e = $('energyEmpty');
-  e.title = '门宽随雷达配置，未实测';
-}
-
-/* ==========================================================================
- * 八、③ x/y 俯视散点：画 0x27 检测范围框 + 目标点 + z 标签
+ * 七、② X-Y 俯视 + 历史轨迹 + 检测范围框 + 屏蔽区
+ *    框来自 0x27 / 0x29 设备回读；未回读成功时用协议默认值并在图上标注「默认值」
  * ========================================================================== */
 const canvas = $('scatter');
 const ctx2d = canvas.getContext('2d');
@@ -2210,27 +2170,46 @@ function cssVar(name, fallback) {
   return (v && v.trim()) || fallback;
 }
 
-function drawScatter(now) {
+function niceStep(span, count) {
+  const raw = Math.max(1, span / Math.max(1, count));
+  const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+  for (const m of [1, 2, 5, 10]) if (m * pow >= raw) return m * pow;
+  return 10 * pow;
+}
+
+function drawXY(now) {
   fitCanvas();
   const w = scatterBox.w, h = scatterBox.h;
   const g = ctx2d;
   g.clearRect(0, 0, w, h);
 
-  const padL = 34, padR = 10, padT = 10, padB = 20;
+  const padL = 40, padR = 10, padT = 12, padB = 22;
   const plotW = Math.max(20, w - padL - padR);
   const plotH = Math.max(20, h - padT - padB);
 
-  /* 世界坐标范围：把 0x27 检测范围框外扩 10%，保证框完整可见 */
-  const r = state.range;
-  const spanX = Math.max(500, r.maxX - r.minX);
-  const spanY = Math.max(500, r.maxY - r.minY);
-  const padX = spanX * 0.12, padY = spanY * 0.12;
-  const wx0 = r.minX - padX, wx1 = r.maxX + padX;
-  const wy0 = r.minY - padY, wy1 = r.maxY + padY;
-  const X = v => padL + (v - wx0) / (wx1 - wx0) * plotW;
-  const Y = v => padT + plotH - (v - wy0) / (wy1 - wy0) * plotH;
+  /* 世界坐标：运动范围 ∪ 存在范围 ∪ 屏蔽区 ∪ 轨迹点，外扩 12% */
+  const boxes = [state.ranges.motion, state.ranges.presence];
+  for (const z of state.maskZones) {
+    boxes.push({ minX: z.minX, maxX: z.maxX, minY: z.minY, maxY: z.maxY });
+  }
+  for (const pt of state.trail) {
+    boxes.push({ minX: pt.x, maxX: pt.x, minY: pt.y, maxY: pt.y });
+  }
+  let wx0 = Infinity, wx1 = -Infinity, wy0 = Infinity, wy1 = -Infinity;
+  for (const b of boxes) {
+    if (!isFinite(b.minX) || !isFinite(b.maxX)) continue;
+    wx0 = Math.min(wx0, b.minX); wx1 = Math.max(wx1, b.maxX);
+    wy0 = Math.min(wy0, b.minY); wy1 = Math.max(wy1, b.maxY);
+  }
+  if (!isFinite(wx0)) { wx0 = -3000; wx1 = 3000; wy0 = -3000; wy1 = 3000; }
+  const spanX0 = Math.max(1000, wx1 - wx0), spanY0 = Math.max(1000, wy1 - wy0);
+  const padX = spanX0 * 0.12, padY = spanY0 * 0.12;
+  const ax0 = wx0 - padX, ax1 = wx1 + padX, ay0 = wy0 - padY, ay1 = wy1 + padY;
+  const spanX = ax1 - ax0, spanY = ay1 - ay0;
+  const X = v => padL + (v - ax0) / spanX * plotW;
+  const Y = v => padT + plotH - (v - ay0) / spanY * plotH;
 
-  /* 背板 + 网格 */
+  /* 背板 + 网格（mm 刻度） */
   g.fillStyle = cssVar('--card2', '#f6f8fb');
   g.fillRect(padL, padT, plotW, plotH);
   g.strokeStyle = cssVar('--line', '#e5e7eb');
@@ -2238,13 +2217,13 @@ function drawScatter(now) {
   g.font = '10px ui-monospace,Consolas,monospace';
   g.fillStyle = cssVar('--sub', '#6b7280');
   const stepX = niceStep(spanX, 5), stepY = niceStep(spanY, 4);
-  for (let v = Math.ceil(wx0 / stepX) * stepX; v <= wx1; v += stepX) {
+  for (let v = Math.ceil(ax0 / stepX) * stepX; v <= ax1; v += stepX) {
     const px = X(v);
     g.beginPath(); g.moveTo(px, padT); g.lineTo(px, padT + plotH); g.stroke();
     g.textAlign = 'center'; g.textBaseline = 'top';
     g.fillText(String(Math.round(v)), px, padT + plotH + 4);
   }
-  for (let v = Math.ceil(wy0 / stepY) * stepY; v <= wy1; v += stepY) {
+  for (let v = Math.ceil(ay0 / stepY) * stepY; v <= ay1; v += stepY) {
     const py = Y(v);
     g.beginPath(); g.moveTo(padL, py); g.lineTo(padL + plotW, py); g.stroke();
     g.textAlign = 'right'; g.textBaseline = 'middle';
@@ -2253,75 +2232,183 @@ function drawScatter(now) {
   /* 原点十字 */
   g.strokeStyle = cssVar('--sub', '#6b7280');
   g.setLineDash([3, 3]);
-  g.beginPath(); g.moveTo(X(0), padT); g.lineTo(X(0), padT + plotH);
-  g.moveTo(padL, Y(0)); g.lineTo(padL + plotW, Y(0)); g.stroke();
+  g.beginPath();
+  g.moveTo(X(0), padT); g.lineTo(X(0), padT + plotH);
+  g.moveTo(padL, Y(0)); g.lineTo(padL + plotW, Y(0));
+  g.stroke();
   g.setLineDash([]);
 
-  /* 0x27 检测范围框（运动区实线 / 存在区虚线；两者相同则只画一次） */
-  g.strokeStyle = cssVar('--brand', '#0b6bcb');
-  g.lineWidth = 1.4;
-  g.strokeRect(X(r.minX), Y(r.maxY), X(r.maxX) - X(r.minX), Y(r.minY) - Y(r.maxY));
+  /* 屏蔽区（0x29）：半透明填充 + 虚线边 + ID 标签（X-Y 投影，Z 范围见表） */
+  const zoneColors = ['#f97316', '#ea580c', '#f59e0b', '#fb923c', '#d97706',
+                      '#c2410c', '#b45309', '#f97316', '#ea580c', '#d97706'];
+  for (const z of state.maskZones) {
+    const x0 = X(Math.min(z.minX, z.maxX)), x1 = X(Math.max(z.minX, z.maxX));
+    const y0 = Y(Math.max(z.minY, z.maxY)), y1 = Y(Math.min(z.minY, z.maxY));
+    const c = zoneColors[(z.id - 1) % zoneColors.length] || '#f97316';
+    g.fillStyle = 'rgba(249,115,22,0.16)';
+    g.fillRect(x0, y0, Math.max(1, x1 - x0), Math.max(1, y1 - y0));
+    g.strokeStyle = c;
+    g.lineWidth = 1.1;
+    g.setLineDash([4, 3]);
+    g.strokeRect(x0, y0, Math.max(1, x1 - x0), Math.max(1, y1 - y0));
+    g.setLineDash([]);
+    g.fillStyle = c;
+    g.textAlign = 'left'; g.textBaseline = 'top';
+    g.font = '10px ui-monospace,Consolas,monospace';
+    g.fillText('M' + z.id, x0 + 2, y0 + 2);
+  }
+
+  /* 0x27 检测范围：运动区实线 / 存在区虚线；未回读时标注「默认值」 */
+  const tagTxt = state.ranges.fromDevice ? '' : '（默认值）';
+  const m = state.ranges.motion, pr = state.ranges.presence;
+  const drawBox = (b, dashed, color, lw) => {
+    const x0 = X(b.minX), x1 = X(b.maxX);
+    const y0 = Y(b.maxY), y1 = Y(b.minY);
+    g.strokeStyle = color;
+    g.lineWidth = lw;
+    if (dashed) g.setLineDash([6, 4]);
+    g.strokeRect(x0, y0, Math.max(1, x1 - x0), Math.max(1, y1 - y0));
+    g.setLineDash([]);
+  };
+  drawBox(pr, true, '#7c3aed', 1.2);
+  drawBox(m, false, cssVar('--brand', '#0b6bcb'), 1.6);
+  g.font = '10px ui-monospace,Consolas,monospace';
   g.fillStyle = cssVar('--brand', '#0b6bcb');
   g.textAlign = 'left'; g.textBaseline = 'bottom';
-  g.fillText('0x27 检测范围 ' + r.minX + '~' + r.maxX + ' / ' + r.minY + '~' + r.maxY +
-             (r.fromDevice ? '' : '（默认值，未回读）'), X(r.minX) + 3, Y(r.maxY) - 2);
+  g.fillText('0x27 运动 ' + m.minX + '~' + m.maxX + ' / ' + m.minY + '~' + m.maxY + tagTxt,
+             X(m.minX) + 3, Y(m.maxY) - 1);
+  g.fillStyle = '#7c3aed';
+  g.textBaseline = 'top';
+  g.fillText('0x27 存在 ' + pr.minX + '~' + pr.maxX + ' / ' + pr.minY + '~' + pr.maxY + tagTxt,
+             X(pr.minX) + 3, Y(pr.maxY) + 1);
 
-  /* 目标点（主通道）：z 有效范围由挂高 0x25 决定 */
-  const ch = state.last81 && state.last81.primary;
-  if (ch) {
-    const px = X(Math.max(wx0, Math.min(wx1, ch.x)));
-    const py = Y(Math.max(wy0, Math.min(wy1, ch.y)));
-    const on = ch.presence === 1;
-    const zOk = ch.z >= 0 && ch.z <= state.mountMm;
+  /* 历史轨迹：最近 ≤300 个 0x81 落点，按时间淡出（越旧越淡、越小） */
+  const n = state.trail.length;
+  if (n > 1) {
     g.beginPath();
-    g.arc(px, py, on ? 7 : 5, 0, Math.PI * 2);
+    for (let i = 0; i < n; i++) {
+      const pt = state.trail[i];
+      const px = X(pt.x), py = Y(pt.y);
+      if (i === 0) g.moveTo(px, py); else g.lineTo(px, py);
+    }
+    g.strokeStyle = 'rgba(21,128,61,0.18)';
+    g.lineWidth = 1;
+    g.stroke();
+  }
+  for (let i = 0; i < n; i++) {
+    const pt = state.trail[i];
+    const age = (i + 1) / n;                       // 0..1，越新越大
+    const px = X(pt.x), py = Y(pt.y);
+    const r = 1.2 + 2.6 * age;
+    const alpha = 0.06 + 0.62 * age;
+    g.beginPath();
+    g.arc(px, py, r, 0, Math.PI * 2);
+    g.fillStyle = pt.presence === 1
+      ? 'rgba(21,128,61,' + alpha.toFixed(3) + ')'
+      : 'rgba(107,114,128,' + (alpha * 0.8).toFixed(3) + ')';
+    g.fill();
+  }
+
+  /* 当前点高亮 + 坐标标签 */
+  const cur = state.trail.length ? state.trail[state.trail.length - 1] : null;
+  if (cur) {
+    const px = X(cur.x), py = Y(cur.y);
+    const on = cur.presence === 1;
+    g.beginPath();
+    g.arc(px, py, on ? 6 : 4.5, 0, Math.PI * 2);
     g.fillStyle = on ? cssVar('--ok', '#15803d') : cssVar('--sub', '#6b7280');
-    g.globalAlpha = on ? 0.95 : 0.55;
+    g.globalAlpha = 0.95;
     g.fill();
     g.globalAlpha = 1;
     if (on) {
       g.beginPath();
-      g.arc(px, py, 13, 0, Math.PI * 2);
+      g.arc(px, py, 12, 0, Math.PI * 2);
       g.strokeStyle = cssVar('--ok', '#15803d');
       g.globalAlpha = 0.35; g.stroke(); g.globalAlpha = 1;
     }
-    g.fillStyle = zOk ? cssVar('--fg', '#111827') : cssVar('--warn', '#c2410c');
-    g.textAlign = 'left'; g.textBaseline = 'bottom';
+    const zOver = cur.z > state.mountMm + 500;
+    g.fillStyle = zOver ? cssVar('--warn', '#c2410c') : cssVar('--fg', '#111827');
     g.font = '11px ui-monospace,Consolas,monospace';
-    g.fillText('(' + ch.x + ', ' + ch.y + ')  z=' + ch.z +
-               (zOk ? '' : ' ⚠超出 0~' + state.mountMm),
-               Math.min(px + 10, padL + plotW - 110), Math.max(py - 8, padT + 10));
+    g.textAlign = 'left'; g.textBaseline = 'bottom';
+    const label = '(' + cur.x + ', ' + cur.y + ')  z=' + cur.z + (zOver ? ' ⚠' : '');
+    g.fillText(label, Math.min(px + 10, padL + plotW - 118), Math.max(py - 8, padT + 12));
   }
 
   /* 轴说明 */
   g.fillStyle = cssVar('--sub', '#6b7280');
   g.font = '10px ui-monospace,Consolas,monospace';
   g.textAlign = 'right'; g.textBaseline = 'bottom';
-  g.fillText('x (mm) →', padL + plotW, padT + plotH + 16);
+  g.fillText('x (mm) →', padL + plotW, padT + plotH + 17);
   g.textAlign = 'left';
-  g.fillText('↑ y (mm)', padL - 30, padT + 8);
+  g.fillText('↑ y (mm)', padL - 34, padT + 9);
 
-  $('sc-tag').className = 'tag ' + (r.fromDevice ? 'ok' : 'off');
-  $('sc-tag').textContent = r.fromDevice
-    ? ('检测范围 ' + (r.maxX - r.minX) + '×' + (r.maxY - r.minY) + ' mm')
-    : '检测范围未回读（默认 ±' + CFG.defaults.rangeMm + '）';
+  /* 图注 */
+  $('xyEmpty').hidden = !!(state.last81 || state.ranges.fromDevice || state.maskZones.length);
+  const meta = [];
+  meta.push('0x81 落点 ' + state.trail.length + ' / ' + CFG.render.trailMax);
+  meta.push(state.ranges.fromDevice ? '范围：设备回读' : '范围：默认值 ±' + CFG.defaults.rangeMm);
+  meta.push(state.maskFromDevice ? ('屏蔽区 ' + state.maskZones.length + ' 个（回读）')
+                                 : '屏蔽区未回读');
+  $('xyMeta').textContent = meta.join(' · ');
+
   const note = $('scatterNote');
-  if (ch) {
-    const zOk = ch.z >= 0 && ch.z <= state.mountMm;
-    note.innerHTML = '主通道 #' + ch.index + '：x=' + ch.x + '，y=' + ch.y + '，z=' + ch.z +
-      ' mm；z 有效范围 0~' + state.mountMm + ' mm（挂高 0x25）' +
-      (zOk ? '' : ' · <b style="color:#c2410c">z 超出挂高，坐标可疑</b>');
+  if (cur) {
+    const zOver = cur.z > state.mountMm + 500;
+    note.innerHTML = '当前点 x=<b>' + cur.x + '</b> · y=<b>' + cur.y + '</b> · z=<b>' + cur.z +
+      '</b> mm（z 为无符号 uint16，挂高 0x25 = ' + state.mountMm + ' mm）' +
+      (zOver ? ' · <b style="color:#c2410c">z 明显大于挂高，坐标可疑</b>' : '') +
+      ' ／ 轨迹最多保留最近 ' + CFG.render.trailMax + ' 个落点，越旧越淡；' +
+      (state.ranges.fromDevice ? '框来自设备回读。'
+                               : '框未回读成功，当前为<b>协议默认值</b>（±' +
+                                 CFG.defaults.rangeMm + ' mm）。');
   } else {
-    note.innerHTML = '等待 0x81：范围框来自 0x27（默认 ±' + CFG.defaults.rangeMm +
-      ' mm）；z 有效范围由挂高 0x25 决定。';
+    note.innerHTML = '框来自设备回读；未回读成功则用协议默认值（运动/存在范围 ±' +
+      CFG.defaults.rangeMm + ' mm）并标注「默认值」。屏蔽区按 X-Y 投影绘制，Z 范围见左下明细表。';
   }
 }
 
-function niceStep(span, count) {
-  const raw = Math.max(1, span / Math.max(1, count));
-  const pow = Math.pow(10, Math.floor(Math.log10(raw)));
-  for (const m of [1, 2, 5, 10]) if (m * pow >= raw) return m * pow;
-  return 10 * pow;
+/* ==========================================================================
+ * 八、③ 检测范围 / 屏蔽区明细（0x27 / 0x29 的设备回读值）
+ * ========================================================================== */
+function renderRangePanel() {
+  const r = state.ranges;
+  const suffix = r.fromDevice ? '' : '（默认值）';
+  $('rngText').innerHTML = '0x27 运动 x <b>' + r.motion.minX + '~' + r.motion.maxX +
+    '</b> / y <b>' + r.motion.minY + '~' + r.motion.maxY + '</b> mm · 存在 x <b>' +
+    r.presence.minX + '~' + r.presence.maxX + '</b> / y <b>' + r.presence.minY + '~' +
+    r.presence.maxY + '</b> mm ' + suffix;
+
+  const tag = $('rngTag');
+  const both = r.fromDevice && state.maskFromDevice;
+  tag.className = 'tag ' + (both ? 'ok' : ((r.fromDevice || state.maskFromDevice) ? 'warn' : 'off'));
+  tag.textContent = both ? '已回读' : ((r.fromDevice || state.maskFromDevice) ? '部分回读' : '未回读（默认值）');
+
+  $('maskText').textContent = state.maskFromDevice
+    ? ('0x29 屏蔽区 ' + state.maskZones.length + ' 个（设备回读，上限 ' + P.maskMax + '）')
+    : '尚未回读 0x29（屏蔽区数量未知）';
+
+  const list = $('maskList');
+  list.innerHTML = '';
+  if (!state.maskZones.length) {
+    const d = document.createElement('div');
+    d.className = 'empty';
+    d.textContent = state.maskFromDevice ? '设备回读为 0 个屏蔽区' : '无屏蔽区数据';
+    list.appendChild(d);
+    return;
+  }
+  for (const z of state.maskZones) {
+    const row = document.createElement('div');
+    row.className = 'mask-row';
+    const id = document.createElement('span');
+    id.className = 'id';
+    id.textContent = '#' + z.id;
+    const rg = document.createElement('span');
+    rg.className = 'rg';
+    rg.textContent = 'x ' + z.minX + '~' + z.maxX + ' · y ' + z.minY + '~' + z.maxY +
+                     ' · z ' + z.minZ + '~' + z.maxZ + ' mm';
+    row.appendChild(id); row.appendChild(rg);
+    list.appendChild(row);
+  }
 }
 
 /* ==========================================================================
@@ -2343,7 +2430,6 @@ function renderTimeline() {
     return;
   }
   list.innerHTML = '';
-  /* 新事件在最上面 */
   for (let i = state.events.length - 1; i >= 0; i--) {
     const e = state.events[i];
     const row = document.createElement('div');
@@ -2364,7 +2450,7 @@ function renderTimeline() {
 }
 
 /* ==========================================================================
- * 十、参数回读表（14 条 GET 的结果；未应答的显式标注，不猜值）
+ * 十、参数回读表（13 条 GET 的结果；未应答的显式标注，不猜值）
  * ========================================================================== */
 const READ_ORDER = buildReadPlan().map(p => p.type);
 
@@ -2408,7 +2494,7 @@ function renderReadback() {
 }
 
 /* ==========================================================================
- * 十一、帧分派：0x81 上报 / 0x80 能量 / 0xA2 应答 / 0xA9 ACK
+ * 十一、帧分派：0x81 上报 / 0xA2 应答 / 0xA9 ACK
  * ========================================================================== */
 function showPayloadWarn(msg) {
   const el = $('payloadWarn');
@@ -2416,6 +2502,16 @@ function showPayloadWarn(msg) {
   el.textContent = '⚠ ' + msg;
 }
 function hidePayloadWarn() { $('payloadWarn').hidden = true; }
+
+function updateRfWarn() {
+  const rf = state.params.get(CFG.TYPE.RF_MODE);
+  const off = !!(rf && rf.ok && rf.data[0] === 0);
+  const el = $('rfWarn');
+  if (!off) { el.hidden = true; return; }
+  el.hidden = false;
+  el.textContent = '⚠ 0x18 回读为 0：射频已关闭，设备不会产生任何 0x81 上报（不是链路故障）。' +
+    '要恢复上报请下发 0x18 = 1（演示推荐参数里已含这一条）。';
+}
 
 function handleFrames(frames) {
   for (const f of frames) {
@@ -2426,10 +2522,10 @@ function handleFrames(frames) {
 
     logFrame('rx', f);
 
-    if (f.op === CFG.OP.STATUS || f.op === CFG.OP.REPORT) {
-      if (f.type === CFG.TYPE.REPORT_81) handleReport81(f, now);
-      else if (f.type === CFG.TYPE.STATUS_80) handleReport80(f, now);
-      else if (f.op === CFG.OP.REPORT) handleReport(f, now);
+    if (f.type === CFG.TYPE.REPORT_81 && (f.op === CFG.OP.STATUS || f.op === CFG.OP.REPORT)) {
+      handleReport81(f, now);
+    } else if (f.op === CFG.OP.REPORT) {
+      handleReport(f, now);
     }
     if (f.op === CFG.OP.ACK) handleAck(f);
     resolvePending(f);
@@ -2439,39 +2535,38 @@ function handleFrames(frames) {
 
 function logFrame(dir, f) {
   const typeName = CFG.TYPE_NAMES[f.type] || '未知';
-  const opName = ({ 0xA0: 'GET', 0xA1: 'SET', 0xA2: 'REPORT', 0xA3: 'STATUS', 0xA9: 'ACK' })[f.op] || ('0x' + hex2(f.op));
+  const opName = ({ 0xA0: 'GET', 0xA1: 'SET', 0xA2: 'REPORT', 0xA3: 'STATUS',
+                    0xA9: 'ACK' })[f.op] || ('0x' + hex2(f.op));
   let ctx = 'msgid ' + hex4(f.msgId) + ' · ' + opName + ' 0x' + hex2(f.type) + ' ' + typeName +
-            ' · 声明 ' + f.lenField + 'B / 线上 ' + f.wireLen + 'B · tlv ' + f.tlvLen + 'B' +
-            (f.escaped ? ' · ' + f.escaped + ' 处转义' : '') +
-            (f.basis === 'raw' ? ' · 未转义口径' : '');
+            ' · 帧长 ' + f.lenField + 'B · len ' + f.tlvLen + 'B';
   if (f.type === CFG.TYPE.REPORT_81) {
     const rep = parseReport81(f.data);
-    ctx += rep.ok ? ' · ' + rep.count + ' 通道' : ' · 载荷口径异常';
-  } else if (f.type === CFG.TYPE.STATUS_80) {
-    ctx += f.data.length === P.ch80Len ? ' · 40+40 能量' : ' · 载荷 ' + f.data.length + 'B 异常';
+    ctx += rep.ok ? (' · x=' + rep.target.x + ' y=' + rep.target.y + ' z=' + rep.target.z)
+                  : ' · 载荷长度异常';
+  } else if (f.type === CFG.TYPE.MASK_ZONE) {
+    const z = parseMaskZones(f.data);
+    ctx += z.ok ? (' · ' + z.count + ' 个屏蔽区') : ' · 载荷异常';
   }
   const hex = bytesToHex(f.raw.subarray(0, Math.min(f.raw.length, CFG.render.logHexLimit)));
   const tail = f.raw.length > CFG.render.logHexLimit ? ' …(' + f.raw.length + 'B)' : '';
-  logLine(f.type === CFG.TYPE.REPORT_81 ? 'ok' : 'rx',
-          dir + ' ' + hex + tail, ctx);
+  logLine(f.type === CFG.TYPE.REPORT_81 ? 'ok' : 'rx', dir + ' ' + hex + tail, ctx);
 }
 
-/** 0x81：每通道 9 B；tlv_len % 9 ≠ 0 → 载荷口径异常（绝不按 7/8 猜） */
+/** 0x81：固定 9 B 单目标；长度 ≠ 9 → 载荷长度异常（把原始十六进制打出来，不猜） */
 function handleReport81(f, now) {
   const rep = parseReport81(f.data);
   if (!rep.ok) {
     state.payloadErrors++;
     state.parser.stats.badPayload++;
     showPayloadWarn(rep.error);
-    logLine('bx', '0x81 载荷口径异常：' + rep.error,
-            '（帧长/校验和本身合法，只丢载荷；不按 7 B / 8 B 猜通道数）');
+    logLine('bx', '0x81 载荷长度异常：' + rep.error,
+            '（帧长/校验和本身合法，只丢载荷；V1.4 无多通道口径，不按 7/8/18 B 猜）');
     return;
   }
   hidePayloadWarn();
   state.f81++;
-  state.channels = rep.channels;
-  const primary = rep.channels.filter(c => c.presence === 1)[0] || rep.channels[0];
-  const presence = rep.channels.some(c => c.presence === 1) ? 1 : 0;
+  const t = rep.target;
+  const presence = t.presence === 1 ? 1 : 0;
 
   /* 事件时间线：只在「真帧」口径下记录切换，静默推断不产生事件 */
   if (state.lastPresenceValue !== null && state.lastPresenceValue !== presence) {
@@ -2480,35 +2575,30 @@ function handleReport81(f, now) {
     state.lastEventAt = now;
     state.lastSwitchAt = now;
     logLine('ok', '状态切换：' + (state.lastPresenceValue ? '有人' : '无人') + ' → ' +
-                  (presence ? '有人' : '无人'), '通道 ' + primary.index + '');
+                  (presence ? '有人' : '无人'),
+            'x=' + t.x + ' y=' + t.y + ' z=' + t.z);
   } else if (state.lastPresenceValue === null) {
     state.lastEventAt = now;
   }
   state.lastPresenceValue = presence;
-  state.last81 = { at: now, presence, channels: rep.channels, primary };
-  if (state.shownPresence === null) state.presenceSince = now;
-}
+  state.last81 = { at: now, presence, state: t.state, direction: t.direction,
+                   x: t.x, y: t.y, z: t.z };
 
-/** 0x80：80 B = 40 运动 + 40 静止；未收到时能量区优雅降级（不报错、不卡住） */
-function handleReport80(f, now) {
-  const rep = parseReport80(f.data);
-  if (!rep.ok) {
-    state.payloadErrors++;
-    state.parser.stats.badPayload++;
-    logLine('bx', '0x80 能量帧口径异常：' + rep.error,
-            '（0x80 需先 SET 0x1E=1 打开调试模式，待实测）');
-    showPayloadWarn(rep.error + '（0x80 需先 SET 0x1E=1，待实测）');
-    return;
+  /* 轨迹：最近 ≤300 个落点（时间淡出由绘制时按索引计算） */
+  state.trail.push({ x: t.x, y: t.y, z: t.z, at: now, presence });
+  if (state.trail.length > CFG.render.trailMax) {
+    state.trail.splice(0, state.trail.length - CFG.render.trailMax);
   }
-  state.f80++;
-  state.last80 = { at: now, motion: rep.motion, still: rep.still };
-  if (state.f80 === 1) logLine('ok', '已收到 0x80 能量帧（说明调试模式生效），能量条开始刷新');
+
+  if (state.shownPresence === null) state.presenceSince = now;
+  state.dirty = true;
 }
 
-/** 0xA2 REPORT：GET/SET 的应答，落到参数表 */
+/** 0xA2 REPORT：GET/SET 的应答，落到参数表，并派生页面口径 */
 function handleReport(f, now) {
   const dec = decodeParam(f.type, f.data);
-  state.params.set(f.type, { data: f.data.slice(), at: now, text: dec.text, ok: dec.ok });
+  state.params.set(f.type, { data: f.data.slice(), at: now, text: dec.text,
+                             ok: dec.ok, value: dec.value });
 
   /* 回读比对：SET 之后自动回读同 type，不一致就标红 */
   const expect = state.expectAfterSet.get(f.type);
@@ -2524,22 +2614,36 @@ function handleReport(f, now) {
     }
   }
 
-  /* 派生口径：上报周期 / 挂高 / 检测范围 / 调试模式 */
-  if (f.type === CFG.TYPE.REPORT_FREQ && f.data.length >= 2) {
+  /* 派生口径：上报周期 / 挂高 / 检测范围 / 屏蔽区 / 射频 */
+  if (f.type === CFG.TYPE.REPORT_FREQ && f.data.length === 2) {
     const v = readUint16BE(f.data, 0);
     if (v > 0) {
       state.period100ms = v;
       logLine('ok', '上报周期已更新：0x17 = ' + v + '（' + (v * 100) + ' ms），静默窗 = ' +
                     (silenceWindowMs(v) / 1000).toFixed(1) + ' s');
     }
-  } else if (f.type === CFG.TYPE.MOUNT_HEIGHT && f.data.length >= 2) {
+  } else if (f.type === CFG.TYPE.MOUNT_HEIGHT && f.data.length === 2) {
     state.mountMm = readUint16BE(f.data, 0);
-  } else if (f.type === CFG.TYPE.DETECT_RANGE && f.data.length >= 16) {
-    state.range = {
-      minX: readInt16BE(f.data, 0), maxX: readInt16BE(f.data, 2),
-      minY: readInt16BE(f.data, 4), maxY: readInt16BE(f.data, 6),
-      fromDevice: true
-    };
+  } else if (f.type === CFG.TYPE.DETECT_RANGE) {
+    const r = parseDetectRange(f.data);
+    if (r.ok) {
+      state.ranges = { motion: r.motion, presence: r.presence, fromDevice: true };
+      renderRangePanel();
+    }
+  } else if (f.type === CFG.TYPE.MASK_ZONE) {
+    const z = parseMaskZones(f.data);
+    if (z.ok) {
+      state.maskZones = z.zones;
+      state.maskFromDevice = true;
+      renderRangePanel();
+      logLine('ok', '屏蔽区已更新：' + z.count + ' 个');
+    }
+  } else if (f.type === CFG.TYPE.RF_MODE) {
+    /* 0x18 回读为 0（射频关闭）→ 顶部显式告警：收不到任何上报，且不是链路故障 */
+    updateRfWarn();
+    if (f.data.length === 1 && f.data[0] === 0) {
+      logLine('bx', '0x18 回读 = 0：射频已关闭，设备不会产生任何上报（不是链路故障）');
+    }
   }
   state.dirty = true;
 }
@@ -2550,7 +2654,6 @@ function handleReport(f, now) {
  * 协议原文对 0xA9 只写了「ack回复」四个字 —— 全文没有定义载荷长度、状态码或任何语义，
  * 所以这里**不解析、不解释、不判定成功/失败**（任何状态码表都是编造）。
  * 成功与否的唯一权威判据是 0xA2 应答 + 回读比对，见 sendSetAndWait()。
- * 若带了载荷，只把原始十六进制打进日志，并注明协议未定义。
  */
 function handleAck(f) {
   const payload = f.data && f.data.length
@@ -2566,7 +2669,7 @@ function handleAck(f) {
 async function connectSerial() {
   if (!('serial' in navigator)) {
     envNote('当前浏览器不支持 Web Serial（navigator.serial 不存在）。请改用电脑版 Chrome / Edge 89+，' +
-            '并在 https 或 localhost 下打开本页。');
+            '并在安全上下文（https 或 localhost）下打开本页。');
     return;
   }
   if (state.connected) return;
@@ -2587,17 +2690,29 @@ async function connectSerial() {
     state.keepReading = true;
     state.openedAt = Date.now();
     state.totalBytes = 0;
-    state.frames = 0; state.f81 = 0; state.f80 = 0; state.payloadErrors = 0;
+    state.frames = 0; state.f81 = 0; state.payloadErrors = 0;
     state.parser = new EdvParser();
     state.params.clear();
     state.readSent.clear();
     state.expectAfterSet.clear();
-    state.last81 = null; state.last80 = null; state.channels = [];
+    state.last81 = null;
+    state.trail = [];
+    state.ranges = {
+      motion: { minX: -CFG.defaults.rangeMm, maxX: CFG.defaults.rangeMm,
+                minY: -CFG.defaults.rangeMm, maxY: CFG.defaults.rangeMm },
+      presence: { minX: -CFG.defaults.rangeMm, maxX: CFG.defaults.rangeMm,
+                  minY: -CFG.defaults.rangeMm, maxY: CFG.defaults.rangeMm },
+      fromDevice: false
+    };
+    state.maskZones = [];
+    state.maskFromDevice = false;
     state.lastPresenceValue = null; state.shownPresence = null;
     state.presenceSince = Date.now(); state.lastSwitchAt = 0; state.lastEventAt = 0;
     state.lastFrameAt = 0; state.gapMs = null;
     pending.clear();
     hidePayloadWarn();
+    updateRfWarn();
+    renderRangePanel();
     envNote('');
     logLine('ok', '串口已打开：' + state.portLabel + ' @ ' + CFG.serial.baudRate + ' 8N1 无流控');
     updateButtons();
@@ -2606,7 +2721,8 @@ async function connectSerial() {
     scheduleReadSequence();
   } catch (err) {
     logLine('bx', '打开串口失败：' + errMsg(err));
-    envNote('打开串口失败：' + errMsg(err) + '（串口可能被其它程序占用：串口助手 / Arduino IDE / 其它标签页）');
+    envNote('打开串口失败：' + errMsg(err) +
+            '（串口可能被其它程序占用：串口助手 / Arduino IDE / 其它标签页）');
   }
 }
 
@@ -2675,7 +2791,7 @@ async function disconnectSerial() {
 
 function deviceOnline() { return state.connected; }
 
-/** 记录真正写上线的一帧（用同一套解析器还原后取字段，避免转义导致下标错位） */
+/** 记录真正写上线的一帧（用同一套解析器还原后取字段） */
 function recordSent(bytes) {
   const probe = new EdvParser();
   const frames = probe.feed(bytes);
@@ -2687,8 +2803,7 @@ function recordSent(bytes) {
     logLine('tx', '发 ' + bytesToHex(bytes), '→ ' + hex4(f.msgId) + ' ' +
       (({ 0xA0: 'GET', 0xA1: 'SET', 0xA2: 'REPORT', 0xA3: 'STATUS', 0xA9: 'ACK' })[f.op] || '?') +
       ' 0x' + hex2(f.type) + ' ' + (CFG.TYPE_NAMES[f.type] || '') +
-      ' · 声明 ' + f.lenField + 'B / 线上 ' + f.wireLen + 'B' +
-      (f.escaped ? ' · ' + f.escaped + ' 处转义' : ''));
+      ' · 帧长 ' + f.lenField + 'B（11+' + f.tlvLen + '）');
     if (f.op === CFG.OP.SET && !state.writeBusy) {
       logLine('bx', '内部告警：在未确认的写入流程之外发出了 SET（不应发生，请报告）');
     }
@@ -2711,7 +2826,7 @@ async function writeFrame(bytes, note) {
   }
 }
 
-/** 连接后的只读查询序列：14 条 GET，一条 SET 都不发 */
+/** 连接后的只读查询序列：13 条 GET，一条 SET 都不发 */
 function scheduleReadSequence() {
   const plan = buildReadPlan();
   state.readSent.clear();
@@ -2729,7 +2844,7 @@ function scheduleReadSequence() {
                                         text: '超时未回答', ok: false, timeout: true });
           renderReadback();
         }
-      }, 4000);
+      }, CFG.readSeq.answerTimeoutMs);
     }, step.atMs);
   }
   logLine('ok', '已排入 ' + plan.length + ' 条只读查询（全部 op=0xA0 GET，零 SET）；' +
@@ -2782,7 +2897,7 @@ function writeSeqLine(cls, text) {
 
 /**
  * 一条 SET 的完整事务：
- *   组帧（转义前 12+N>50 或 转义后线上>50 直接拒发）→ 写串口 → 等 A2/ACK（500 ms 超时即中止）
+ *   语义校验 + 组帧 → 写串口 → 等 A2/ACK（500 ms 超时即中止）
  *   → 回读同 type 并逐字节比对（不一致标红「回读 ≠ 设定」）
  * 收到 0xA9 只代表「已应答」，不下任何成功/失败结论（协议未定义其载荷）。
  */
@@ -2790,7 +2905,7 @@ async function sendSetAndWait(item) {
   const msgId = nextMsgId();
   let frame;
   try {
-    frame = createFrame(CFG.OP.SET, item.type, item.data, msgId);
+    frame = buildSetFrame(item.type, item.data, msgId);
   } catch (e) {
     return { ok: false, refused: true, reason: errMsg(e) };
   }
@@ -2804,11 +2919,7 @@ async function sendSetAndWait(item) {
     return { ok: false, reason: '等待应答超时（' + CFG.write.timeoutMs + ' ms 内无 0xA2/0xA9）' };
   }
   const f = res.frame;
-  /* 0xA9 ACK：协议对载荷没有任何定义（只写「ack回复」）→ 收到即视为「已应答」，
-     ACK 分支的结论固定是 { ok: true, acked: true }：不看载荷、不判失败、不中止后续 SET。
-     成功与否的唯一权威判据是下面的回读比对（以及 0xA2 应答里的回读值）。 */
-  const ackRes = (f.op === CFG.OP.ACK) ? { ok: true, acked: true } : null;
-  const acked = !!(ackRes && ackRes.acked);
+  const acked = (f.op === CFG.OP.ACK);
   if (acked) {
     writeSeqLine('ok', '设备 ACK（0xA9）：' + item.name + ' 已应答' +
                         (f.data && f.data.length
@@ -2878,7 +2989,6 @@ async function runSetPlan(items, title) {
     writeSeqLine('ok', title + ' 完成：' + items.length + ' 条全部应答并回读一致');
     logLine('ok', title + ' 完成：' + items.length + ' 条全部应答并回读一致');
   }
-  /* 全部结束后再整体回读一遍，让参数表与页面口径同步 */
   await pause(120);
   for (const it of items) await readbackType(it.type);
   renderReadback();
@@ -2909,7 +3019,7 @@ async function applyPreset() {
     writeSeqLine('wait', '用户取消，未发送任何帧');
     return;
   }
-  state.writeBusy = true; state.presetBusy = true;
+  state.writeBusy = true;
   updateButtons();
   $('presetSeqLog').dataset.empty = '0';
   $('presetSeqLog').textContent = '';
@@ -2918,85 +3028,97 @@ async function applyPreset() {
   try {
     await runSetPlan(items, '演示推荐参数');
   } finally {
-    state.writeBusy = false; state.presetBusy = false;
+    state.writeBusy = false;
     updateButtons();
     state.dirty = true;
   }
 }
 
 /**
- * 高危：0x1F 恢复出厂。默认禁用；需先勾「我已知晓」解锁，再连过两道确认框。
- * 第二道要求手动输入 1F 才继续（照 level.html「写入必须显式确认」的严格口径再加一档）。
+ * 高危单发（0x1F / 0x1A / 0x20 / 0x21 / 0x22）：默认禁用。
+ * 需先勾「我已知晓」解锁，再连过两道确认：confirm + 手动输入该命令的 type 十六进制。
  */
-async function requestFactoryReset() {
+async function runHighRisk(item, title, token, warns) {
   if (!state.highRiskUnlocked) {
-    logLine('bx', '0x1F 未解锁：请先勾选「我已知晓」');
+    logLine('bx', '0x' + hex2(item.type) + ' 未解锁：请先勾选「我已知晓」');
     return;
   }
   if (!deviceOnline()) { logLine('bx', '未连接设备，无法下发'); return; }
   if (state.writeBusy) { logLine('bx', '上一次下发仍在进行，请稍候'); return; }
 
-  const first = window.confirm(
-    '【高危】将向 EDV163-N-03 发送 SET 0x1F = 1，把雷达全部参数恢复出厂：\n\n' +
-    '· 挂高 0x25、上报周期 0x17、检测范围 0x27、检测延时 0x11、触发模式 0x24、\n' +
-    '  调试模式 0x1E 全部回到出厂值\n' +
-    '· 本页刚下发的「演示推荐参数」会被清掉，需要重新下发\n\n' +
-    '确定要继续吗？（下一步还有一次确认）'
-  );
-  if (!first) { logLine('ok', '已取消 0x1F：未发送任何帧（第一道确认）'); return; }
+  const first = window.confirm('【高危】' + title + '\n\n' + warns +
+    '\n\n确定要继续吗？（下一步还有一次确认）');
+  if (!first) { logLine('ok', '已取消 0x' + hex2(item.type) + '：未发送任何帧（第一道确认）'); return; }
   const typed = window.prompt(
-    '第二道确认：请手动输入 1F（大写，表示你确认恢复出厂），其它任何输入都会取消：', '');
-  if (typed === null) { logLine('ok', '已取消 0x1F：未发送任何帧（第二道确认点取消）'); return; }
-  if (String(typed).trim().toUpperCase() !== '1F') {
-    logLine('bx', '已取消 0x1F：第二道确认输入不是 1F（收到「' + typed + '」），未发送任何帧');
+    '第二道确认：请手动输入 ' + token + '（大写，表示你确认这一条高危命令），其它任何输入都会取消：', '');
+  if (typed === null) {
+    logLine('ok', '已取消 0x' + hex2(item.type) + '：未发送任何帧（第二道确认点取消）');
+    return;
+  }
+  if (String(typed).trim().toUpperCase() !== token) {
+    logLine('bx', '已取消 0x' + hex2(item.type) + '：第二道确认输入不是 ' + token +
+                  '（收到「' + typed + '」），未发送任何帧');
     return;
   }
 
   state.writeBusy = true;
   updateButtons();
-  writeSeqLine('wait', '【高危】开始下发 SET 0x1F = 1（恢复出厂）');
-  logLine('ok', '【高危】用户双重确认，开始下发 SET 0x1F = 1');
+  writeSeqLine('wait', '【高危】开始下发 ' + title);
+  logLine('ok', '【高危】用户双重确认，开始下发 ' + title);
   try {
-    const item = buildFactoryResetPlan()[0];
     const res = await sendSetAndWait(item);
     if (!res.ok) {
-      writeSeqLine('err', '0x1F 下发失败：' + res.reason);
-      logLine('bx', '0x1F 下发失败：' + res.reason);
-    } else {
-      writeSeqLine('ok', '0x1F 已下发；设备已恢复出厂，请重新「应用演示推荐参数」');
-      logLine('ok', '0x1F 已下发；参数表将在下一次回读时反映出厂值');
-      /* 恢复出厂后整体回读一遍，页面口径跟着刷新 */
-      await pause(200);
-      for (const type of READ_ORDER) await readbackType(type);
-      renderReadback();
+      writeSeqLine('err', '0x' + hex2(item.type) + ' 下发失败：' + res.reason);
+      logLine('bx', '0x' + hex2(item.type) + ' 下发失败：' + res.reason);
+      return;
     }
+    writeSeqLine('ok', '0x' + hex2(item.type) + ' 已下发（' + item.display + '）');
+    /* 高危后整体回读一遍，页面口径跟着刷新 */
+    await pause(200);
+    for (const type of READ_ORDER) await readbackType(type);
+    renderReadback();
   } finally {
     state.writeBusy = false;
     updateButtons();
+    state.dirty = true;
   }
+}
+
+function askLearnExitMode() {
+  const v = window.prompt('选择 0x21 的取值：\n1 = 退出并保存\n2 = 退出不保存\n\n请输入 1 或 2：', '1');
+  if (v === null) return null;
+  const n = parseInt(String(v).trim(), 10);
+  return (n === 1 || n === 2) ? n : null;
+}
+function askLearnRestoreMode() {
+  const v = window.prompt('选择 0x22 的取值：\n1 = 恢复上一次学习参数\n2 = 恢复默认参数\n\n请输入 1 或 2：', '1');
+  if (v === null) return null;
+  const n = parseInt(String(v).trim(), 10);
+  return (n === 1 || n === 2) ? n : null;
 }
 
 /* ==========================================================================
- * 十三、注入样例帧（无硬件时确认四块 UI 渲染；走的是同一个解析器）
+ * 十三、注入样例（无硬件时确认界面渲染；走的是同一个解析器）
  * ========================================================================== */
 function inject81() {
-  const payload = buildReport81Payload([ch81(1, 2, 1, 2569, -800, 2350)]);
-  const frame = createDeviceFrame(CFG.OP.STATUS, CFG.TYPE.REPORT_81, payload);
-  onSerialData(frame);
-  logLine('ok', '已注入一条构造的 0x81 帧（单通道 9 B），用于确认四块 UI 渲染');
+  const payload = buildReport81Payload(t81(1, 2, 1, 2569, -800, 2350));
+  onSerialData(createFrame(CFG.OP.STATUS, CFG.TYPE.REPORT_81, payload, nextMsgId()));
+  logLine('ok', '已注入一条构造的 0x81 帧（9 B 单目标：有人/运动/靠近，x=2569 y=-800 z=2350）');
 }
 
-function inject80() {
-  const motion = [], still = [];
-  for (let i = 0; i < P.ch80Gates; i++) {
-    const d1 = Math.abs(i - 6), d2 = Math.abs(i - 24);
-    motion.push(Math.max(0, Math.round(90 - d1 * 14)));
-    still.push(Math.max(0, Math.round(70 - d2 * 5)));
-  }
-  const frame = createDeviceFrame(CFG.OP.STATUS, CFG.TYPE.STATUS_80,
-                                  buildReport80Payload(motion, still));
-  onSerialData(frame);
-  logLine('ok', '已注入一条构造的 0x80 能量帧（40 运动 + 40 静止）');
+function injectRangeSample() {
+  const range = packDetectRange({
+    motion: { minX: -3000, maxX: 3000, minY: -2500, maxY: 2500 },
+    presence: { minX: -2000, maxX: 2000, minY: -1800, maxY: 1800 }
+  });
+  const zones = packMaskZones([
+    { id: 1, minX: -3000, maxX: -1800, minY: 1000, maxY: 2500, minZ: 0, maxZ: 1200 },
+    { id: 2, minX: 1800, maxX: 3000, minY: 1000, maxY: 2500, minZ: 0, maxZ: 1200 }
+  ]);
+  const seq = [createFrame(CFG.OP.REPORT, CFG.TYPE.DETECT_RANGE, range, nextMsgId()),
+               createFrame(CFG.OP.REPORT, CFG.TYPE.MASK_ZONE, zones, nextMsgId())];
+  onSerialData(concatBytes(seq));
+  logLine('ok', '已注入 0x27 检测范围 + 0x29 屏蔽区（2 个）样例回读，用于预览俯视图渲染');
 }
 
 /* ==========================================================================
@@ -3046,11 +3168,17 @@ function envNote(text) {
 function updateButtons() {
   const on = state.connected;
   const busy = state.writeBusy;
+  const risk = state.highRiskUnlocked;
   $('btn-connect').disabled = on || busy;
   $('btn-disconnect').disabled = !on;
   $('btn-readall').disabled = !on || busy;
   $('btn-preset').disabled = !on || busy;
-  $('btn-factory').disabled = !on || busy || !state.highRiskUnlocked;
+  $('btn-factory').disabled = !on || busy || !risk;
+  $('btn-forceleave').disabled = !on || busy || !risk;
+  $('btn-learn').disabled = !on || busy || !risk;
+  $('btn-learnexit').disabled = !on || busy || !risk;
+  $('btn-learnrestore').disabled = !on || busy || !risk;
+  $('inp-learnsec').disabled = !on || busy || !risk;
   const dot = $('st-dot');
   dot.className = 'dot' + (on ? (busy ? ' busy' : ' on') : '');
   $('st-conn').textContent = on ? (busy ? '下发中…' : '已连接') : '未连接';
@@ -3065,6 +3193,24 @@ function updateConnInfo(now) {
   $('ci-uptime').textContent = state.connected ? fmtDur(now - state.openedAt) : '—';
 }
 
+/** 演示推荐参数清单（静态渲染，值来自 buildPresetPlan，杜绝文案与代码不一致） */
+function renderPresetList() {
+  const box = $('presetList');
+  box.innerHTML = '';
+  for (const it of buildPresetPlan()) {
+    const row = document.createElement('div');
+    row.className = 'item';
+    const s = document.createElement('span');
+    s.className = 's';
+    s.textContent = '·';
+    const txt = document.createElement('span');
+    txt.innerHTML = '<code>0x' + hex2(it.type) + '</code> ' + it.name + ' → <b>' +
+                    it.display + '</b>';
+    row.appendChild(s); row.appendChild(txt);
+    box.appendChild(row);
+  }
+}
+
 function bindUI() {
   $('btn-connect').addEventListener('click', connectSerial);
   $('btn-disconnect').addEventListener('click', disconnectSerial);
@@ -3075,17 +3221,50 @@ function bindUI() {
     scheduleReadSequence();
   });
   $('btn-preset').addEventListener('click', applyPreset);
-  $('btn-factory').addEventListener('click', requestFactoryReset);
+
+  $('btn-factory').addEventListener('click', () => {
+    runHighRisk(buildFactoryResetPlan()[0], 'SET 0x1F = 1（恢复出厂设置）', '1F',
+      '· 挂高 0x25、上报周期 0x17、检测范围 0x27、检测高度 0x26、触发模式 0x24、射频 0x18 全部回到出厂值\n' +
+      '· 刚下发的「演示推荐参数」会被清掉，需要重新下发');
+  });
+  $('btn-forceleave').addEventListener('click', () => {
+    runHighRisk(buildForceLeavePlan()[0], 'SET 0x1A = 1（强制进入无人）', '1A',
+      '· 会立刻把雷达状态压成「无人」，直到下一次触发\n· 演示时容易看起来像「设备坏了」');
+  });
+  $('btn-learn').addEventListener('click', () => {
+    const sec = parseInt($('inp-learnsec').value, 10);
+    if (!(sec >= 30 && sec <= 65535)) {
+      logLine('bx', '自学习时间必须是 30~65535 s（当前输入 ' + $('inp-learnsec').value + '）');
+      return;
+    }
+    runHighRisk(buildLearnPlan(sec)[0], 'SET 0x20 = ' + sec + '（进入自学习）', '20',
+      '· 自学习期间雷达会用现场环境重算参数，演示画面可能异常\n' +
+      '· 需要提前退出请用 0x21（可选保存或不保存）');
+  });
+  $('btn-learnexit').addEventListener('click', () => {
+    const mode = askLearnExitMode();
+    if (mode === null) { logLine('ok', '已取消 0x21：未选择取值，未发送任何帧'); return; }
+    runHighRisk(buildLearnExitPlan(mode)[0], 'SET 0x21 = ' + mode + '（强制退出自学习）', '21',
+      '· 1 = 退出并保存（把本次学习结果写入）\n· 2 = 退出不保存（丢弃本次学习结果）');
+  });
+  $('btn-learnrestore').addEventListener('click', () => {
+    const mode = askLearnRestoreMode();
+    if (mode === null) { logLine('ok', '已取消 0x22：未选择取值，未发送任何帧'); return; }
+    runHighRisk(buildLearnRestorePlan(mode)[0], 'SET 0x22 = ' + mode + '（自学习参数恢复）', '22',
+      '· 1 = 恢复上一次学习参数\n· 2 = 恢复默认参数');
+  });
   $('chk-highrisk').addEventListener('change', e => {
     state.highRiskUnlocked = !!e.target.checked;
     updateButtons();
     logLine(state.highRiskUnlocked ? 'bx' : 'ok',
-            state.highRiskUnlocked ? '0x1F 已解锁（仍需两道确认才会发出）' : '0x1F 已重新上锁');
+            state.highRiskUnlocked ? '高危操作已解锁（0x1F / 0x1A / 0x20 / 0x21 / 0x22 仍需两道确认才会发出）'
+                                   : '高危操作已重新上锁');
   });
+
   $('btn-selftest').addEventListener('click', runSelftestAndShow);
   $('btn-selftest2').addEventListener('click', runSelftestAndShow);
   $('btn-inject81').addEventListener('click', inject81);
-  $('btn-inject80').addEventListener('click', inject80);
+  $('btn-injectrange').addEventListener('click', injectRangeSample);
   $('btn-theme').addEventListener('click', cycleTheme);
   $('btn-logclear').addEventListener('click', () => { $('logbox').innerHTML = ''; });
   $('btn-tlclear').addEventListener('click', () => {
@@ -3110,8 +3289,7 @@ function tick() {
     state.dirty = false;
     updateHero(now);
     updateStats(now);
-    renderEnergy();
-    drawScatter(now);
+    drawXY(now);
     updateConnInfo(now);
   }
   requestAnimationFrame(tick);
@@ -3120,19 +3298,22 @@ function tick() {
 function boot() {
   state.serialSupported = ('serial' in navigator);
   $('writeTimeout').textContent = String(CFG.write.timeoutMs);
-  buildEnergyGrid();
+  $('xyTrailMax').textContent = String(CFG.render.trailMax);
+  renderPresetList();
   renderReadback();
   renderTimeline();
-  renderEnergy();
+  renderRangePanel();
+  updateRfWarn();
   applyTheme();
   bindUI();
   updateButtons();
   updateStats(Date.now());
   updateHero(Date.now());
+  drawXY(Date.now());
 
   if (!state.serialSupported) {
     envNote('当前浏览器不支持 Web Serial（navigator.serial 不存在）：请用电脑版 Chrome / Edge 89+，' +
-            '并在 https 或 localhost 下打开本页。下面的「页内自测」与「注入样例帧」不依赖串口，可先跑。');
+            '并在安全上下文（https 或 localhost）下打开本页。下面的「页内自测」与「注入样例」不依赖串口，可先跑。');
     logLine('bx', '浏览器不支持 Web Serial；页内自测与注入样例仍可用');
   } else {
     logLine('ok', '就绪：点「连接串口」选择 EDK60 的 USB 串口（256000 8N1，档位钉死）');
@@ -3151,8 +3332,7 @@ function boot() {
   logLine(r.pass === r.total ? 'ok' : 'bx', '启动自测（静默）：' + r.head);
   if (r.pass !== r.total) r.lines.forEach(l => logLine('bx', l));
 
-  /* 无硬件先确认四块 UI：注入一组样例帧（不写任何存储，刷新即清空） */
-  logLine('ok', '提示：无硬件时可点「注入 0x81 样例 / 注入 0x80 样例」确认四块 UI 渲染');
+  logLine('ok', '提示：无硬件时可点「注入 0x81 样例 / 注入范围/屏蔽区样例」确认俯视图与轨迹渲染');
   requestAnimationFrame(tick);
 }
 
@@ -3160,4 +3340,3 @@ boot();
 </script>
 </body>
 </html>
-
