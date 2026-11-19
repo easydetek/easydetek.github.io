@@ -51,3 +51,8 @@ doorlock:
   label: 门锁感应
   permalink: /case/doorlock
   description: 非接触人体感应门锁、接近唤醒等应用案例
+
+presence:
+  label: 人体存在检测
+  permalink: /case/presence
+  description: 有人/无人存在检测、静止与微动感知等人存应用案例

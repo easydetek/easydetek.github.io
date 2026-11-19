@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>网页烧录 · 人体存在检测演示固件（EDK60 + EDV163-N-03）</title>
+<style>
+  :root { --fg:#1a1a1a; --sub:#5b6570; --line:#e3e8ee; --bg:#f7f9fb; --brand:#0b6bcb; --ok:#1a8f4c; --warn:#c2410c; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:32px 16px; font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+         color:var(--fg); background:var(--bg); line-height:1.75; }
+  .wrap { max-width:760px; margin:0 auto; background:#fff; border:1px solid var(--line);
+          border-radius:14px; padding:32px 32px 28px; }
+  h1 { font-size:24px; margin:0 0 6px; }
+  .lead { color:var(--sub); margin:0 0 24px; font-size:15px; }
+  h2 { font-size:17px; margin:28px 0 10px; padding-top:20px; border-top:1px solid var(--line); }
+  ol { padding-left:22px; margin:10px 0; }
+  li { margin:8px 0; }
+  .box { background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin:14px 0; }
+  .box.warn { background:#fff7ed; border-color:#fed7aa; }
+  .box.danger { background:#fef2f2; border:2px solid #e11d48; border-radius:10px;
+                padding:16px 18px; margin:0 0 22px; color:#881337; font-size:15px; }
+  .box.danger b { color:#9f1239; }
+  .box code { background:#eef2f6; padding:1px 6px; border-radius:4px; font-size:13px; }
+  .btn-area { text-align:center; margin:28px 0 8px; }
+  esp-web-install-button { --md-sys-color-primary: var(--brand); }
+  .fallback { font-size:13px; color:var(--warn); text-align:center; margin-top:10px; }
+  table { border-collapse:collapse; width:100%; font-size:14px; margin:10px 0; }
+  th,td { border:1px solid var(--line); padding:8px 10px; text-align:left; }
+  th { background:var(--bg); font-weight:600; }
+  td.n { white-space:nowrap; }
+  .foot { margin-top:26px; padding-top:16px; border-top:1px solid var(--line);
+          font-size:13px; color:var(--sub); }
+  kbd { background:#eef2f6; border:1px solid var(--line); border-bottom-width:2px;
+        border-radius:4px; padding:1px 6px; font-size:12px; }
+  a { color:var(--brand); }
+  .ok { color:var(--ok); font-weight:600; }
+  .no { color:#b91c1c; font-weight:600; }
+  code.mono { font-family:ui-monospace,Consolas,monospace; word-break:break-all; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>网页烧录 · 人体存在检测演示固件（EDK60 + EDV163-N-03）</h1>
+
+  <div class="box danger">
+    ⚠️ 本固件与演示页<b>尚未在 EDV163-N-03 实物上实测</b>（当前验证的是桥接实现、网页端解析器与
+    16 条无硬件自测），实测数据待补；如遇问题请反馈
+    <a href="mailto:support@easydetek.com">support@easydetek.com</a>
+  </div>
+
+  <p class="lead">
+    EDK60_VA V1.0（ESP32-C6）+ EDV163-N-03 人体存在检测雷达的<b>纯字节双向透传桥</b>固件。
+    不需要安装任何软件。用 Chrome 或 Edge 浏览器打开本页，插上 USB 线，点按钮即可。
+  </p>
+
+  <div class="box">
+    <b>先说清楚这三个字：「透传桥」。</b><br>
+    本页烧的是 <b>EDV163 纯字节双向透传桥固件</b>——它<b>与站内水位示例
+    （<a href="../edv163/level.html">level.html</a>）是同一个固件，SHA256 相同</b>，
+    只是换了文件名 <code>edk60_edv163_bridge.bin</code> 以便人存演示页对照引用。<br>
+    桥固件本身<b>一行协议代码都没有</b>：0x81 上报解析、有人/无人判定、能量条、俯视散点、
+    静默推断，<b>全部在网页端（presence.html）完成</b>。想改判定逻辑、加新图表，
+    只改网页即可，<b>不需要重新烧板子</b>。
+  </div>
+
+  <h2>开始前，确认三件事</h2>
+  <table>
+    <tr><th>✅</th><th>检查项</th><th>怎么确认</th></tr>
+    <tr><td>1</td><td>雷达模组已插在板子的 <b>H3</b> 排针上</td><td>模组插紧，<b>不要插在 H4</b>（H4 顺序相反，会电源/数据互扰）</td></tr>
+    <tr><td>2</td><td>USB-C 线已连到电脑</td><td>板上有绿灯亮，电脑设备列表里能看到串口</td></tr>
+    <tr><td>3</td><td>用的是 <b>Chrome / Edge 89+</b></td><td>Firefox、Safari 不支持 Web Serial，会看不到烧录按钮</td></tr>
+  </table>
+
+  <h2>烧录（三步）</h2>
+  <ol>
+    <li><b>点下面的按钮</b>，浏览器会弹出一个设备列表</li>
+    <li>在列表里选带 <code>USB</code> / <code>JTAG</code> / <code>COM</code> 字样的那一项，点「连接」</li>
+    <li>点 <b>安装 / Install</b>，等进度条走完（约 10~20 秒），看到「完成」就好了</li>
+  </ol>
+
+  <div class="btn-area">
+    <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+    <esp-web-install-button manifest="manifest.json">
+      <button slot="activate" style="font-size:16px;padding:12px 28px;border-radius:8px;
+              border:none;background:#0b6bcb;color:#fff;cursor:pointer;">
+        ⚡ 开始烧录
+      </button>
+      <span slot="unsupported" class="fallback">
+        当前浏览器不支持。请改用电脑上的 <b>Chrome</b> 或 <b>Edge 89+</b> 打开本页。
+      </span>
+      <span slot="not-allowed" class="fallback">
+        本页需要用 <b>https://</b> 或 <b>http://localhost</b> 打开才能使用串口功能。
+      </span>
+    </esp-web-install-button>
+    <p class="fallback">如果按钮点了没反应，见下面「常见问题」第 3 条。</p>
+  </div>
+
+  <div class="box">
+    <b>本次写入的内容：</b>合并固件 <code>edk60_edv163_bridge.bin</code>，
+    244,192 字节，烧录偏移 <code>0x0</code>，目标芯片 <code>ESP32-C6</code>，版本 <code>0.9.0</code>。<br>
+    <b>与水位示例同一固件：</b>内容与 <code>edk60_edv163_level.bin</code> 完全一致，
+    SHA256 均为 <code class="mono">72E600D0…07381B</code>（<code>72E600D09B756883F02B14828B92CEA3528A31A3416F613437DF54B66307381B</code>）。<br>
+    烧录器会自动整片擦除后写入（一次成型，不需要分别烧 bootloader / 分区表 / app）。
+  </div>
+
+  <h2>烧完之后</h2>
+  <ol>
+    <li><b>拔掉 USB 线，等 2 秒，再插回去</b>（让板子重新启动）</li>
+    <li>看板子上的 <b>丝印 RADAR 的红灯</b>：亮了 = 雷达已上电，正常</li>
+    <li>打开演示页 <a href="./presence.html"><b>presence.html</b></a>（同一目录，也可以直接点这个链接）</li>
+    <li>在演示页里点 <b>「连接串口」</b>，在弹窗里选那个 <code>USB 串行设备</code>；
+        串口参数固定 <b>256000 8N1 无流控</b>，页面已设好，<b>不要改成 921600</b></li>
+    <li>连上后演示页会自动发 <b>14 条只读 GET</b>，右栏「参数回读」逐条填上设备真实值
+        （未应答的显示「超时未回答」，不猜值）</li>
+    <li>想看能量条（<code>0x80</code>）：到右栏点一次 <b>「应用演示推荐参数…（需确认）」</b>
+        并在确认框里点确定——其中一条是 <code>SET 0x1E=1</code> 打开调试模式
+        （协议未明写、<b>待实测</b>）。没开时能量区会显示
+        「未收到能量帧 · 需 SET 0x1E=1 开调试模式（待实测）」，这是<b>优雅降级</b>，不是故障</li>
+  </ol>
+
+  <div class="box">
+    <b>演示页是「默认只读」的：</b>连上之后只发查询指令（<code>op=0xA0</code>），
+    不改写模组配置；任何写入都必须你先点按钮并在确认框里点确定，
+    且<b>逐条发送、逐条等应答、逐条回读比对</b>（单条 500 ms 超时即中止）。<br>
+    <span style="color:var(--sub);font-size:13px;">
+      如果没有硬件，演示页里的「运行页内自测」（16 条用例）与「注入 0x81 / 0x80 样例」
+      都不依赖串口，可以先确认整条渲染管线。
+    </span>
+  </div>
+
+  <h2>这套固件做什么</h2>
+  <p>
+    它是一根<b>双向透明的桥</b>：EDK60 板上的 ESP32-C6 把 EDV163-N-03 雷达串口上的字节
+    <b>原样转发</b>到板子的原生 USB（CDC，免驱），<b>固件本身不做任何协议解析</b>。
+    雷达上报的每一帧都完整送到上位机；有人/怎么判定、坐标怎么画、能量条怎么算，
+    <b>全部在网页端完成</b>——雷达固件升级、协议字段调整都不需要重新烧板子。
+  </p>
+  <table>
+    <tr><th>项</th><th>值</th></tr>
+    <tr><td>固件名</td><td>radar_bridge_edv163（纯字节双向透传桥，文件 <code>edk60_edv163_bridge.bin</code>）</td></tr>
+    <tr><td>目标芯片 / 板子</td><td>ESP32-C6 · EDK60_VA V1.0</td></tr>
+    <tr><td>雷达模组</td><td>EDV163-N-03（人体存在检测）</td></tr>
+    <tr><td>模组插入位置</td><td><b>H3</b>（必须，不能插 H4）</td></tr>
+    <tr><td>串口参数</td><td><b>256000</b> · 8N1 · 无流控（<b>不是 921600</b>）</td></tr>
+    <tr><td>帧格式</td><td>帧头 <code>45 44</code>，长度 <code>12 + N</code>（按转义前算），
+      校验和 = 自 <code>45</code> 起至 value 末逐字节累加 mod 256，帧尾 <code>0A</code>；
+      正文转义 <code>0A → 09 01</code>、<code>09 → 09 00</code></td></tr>
+    <tr><td>上报帧</td><td><code>op=0xA3 / type=0x81</code>：每通道 <b>9 B</b>
+      （有人 1B / 状态 1B / 方向 1B / x、y、z 各 2B 大端有符号，mm），
+      <code>tlv_len</code> 必须是 9 的整数倍</td></tr>
+    <tr><td>调试数据</td><td><code>op=0xA3 / type=0x80</code>：80 B = 40 运动能量 + 40 静止能量（0-100），
+      需 <code>SET 0x1E=1</code>（<b>待实测</b>）</td></tr>
+    <tr><td class="n">上板实测</td><td><span class="no">❌ 尚未在 EDV163-N-03 实物上验证</span>（模组当前烧的是其它固件，换固件后才能测）</td></tr>
+    <tr><td class="n">已有验证</td><td><span class="ok">网页端解析器自测 16/16</span> +
+      <span class="ok">额外回归 48 项</span>（<code>node scripts/edv163_presence_selftest.mjs</code>，
+      抽的是 presence.html 里同一份解析器代码）；8 条文档示例帧（4 组，每组主机+应答）的校验和逐字节对齐。
+      以上均为<b>无硬件</b>验证，不能替代实机数据</td></tr>
+  </table>
+
+  <h2>常见问题</h2>
+
+  <div class="box warn">
+    <b>1. 烧好了，但我用串口助手打开只看到一堆乱码 / 乱字符？</b><br>
+    <b>这是正常的，不是坏了。</b>本固件转发的是雷达的<b>二进制协议帧</b>（以 <code>0x45 0x44</code> 开头，
+    中间含不可打印字节与转义序列），不是文本。串口助手默认按文本显示，自然就是乱码。<br>
+    → 想看有意义的内容，请用演示页 <a href="./presence.html">presence.html</a>（它按协议解析并画四块图）<br>
+    → 想在串口助手里看，切到 <b>Hex / 十六进制显示</b>，端口参数必须是
+      <b>256000 8N1</b>；参数填错时连十六进制也是错乱的
+  </div>
+
+  <div class="box warn">
+    <b>2. 模组插在 H4 上行不行？</b><br>
+    <b>不行。</b>H3 与 H4 的信号集合相同但<b>顺序相反</b>：H4 上模组的 <code>T</code>（数据）与
+    电源使能落在同一网络，插 H4 会造成<b>电源与数据互相干扰</b>——典型现象是红灯忽明忽暗、
+    串口要么没数据要么全坏帧。<br>
+    → 断电后把模组移到 <b>H3</b>，插紧，再上电
+  </div>
+
+  <div class="box warn">
+    <b>3. 网页连不上串口 / 点了没反应 / 根本没有按钮？</b><br>
+    → <b>浏览器不对</b>：只有电脑版 <b>Chrome / Edge 89+</b> 支持 Web Serial；Firefox、Safari、
+      手机浏览器、微信内置浏览器都不支持<br>
+    → <b>页面不是安全上下文</b>：Web Serial 与烧录都只在 <code>https://</code> 或
+      <code>http://localhost</code> 下可用。用本站 https 页面访问即正常；直接双击打开本地
+      <code>file://</code> 文件会失败，本地测试请在该目录起一个静态服务
+      （例如 <code>py -3 -m http.server 8771</code>）再访问
+      <code>http://localhost:8771/presence.html</code><br>
+    → <b>串口被占用</b>：关掉串口助手、Arduino IDE、其它浏览器标签页后重试<br>
+    → 还不行：换一根<b>能传数据</b>的 USB 线（很多充电线只有电、没有数据），优先插机箱后面的 USB 口
+  </div>
+
+  <div class="box warn">
+    <b>4. 波特率为什么要 256000？能不能用 921600？</b><br>
+    <b>不能。</b>EDV163 这一代雷达的串口固定 <b>256000 8N1 无流控</b>，
+    和 EDV151 / EDV11P 用的 <b>921600</b> 不是一个档位。波特率填错的表现是：
+    串口能打开、但<b>一个合法帧都收不到</b>，统计条坏帧数与总字节数会一直往上飙。<br>
+    → 演示页已把 256000 写死在代码里且不提供改档；自己写程序对接时务必对齐这一档。<br>
+    → 另注：EDK60 是 ESP32-C6 原生 USB CDC，<b>浏览器里的波特率不影响板载 UART 线速</b>，
+      但为了不误导，两处都钉死 256000
+  </div>
+
+  <div class="box warn">
+    <b>5. 页面显示「无人（按静默推断）」，是不是设备挂了？</b><br>
+    <b>不是。</b>协议的口径是「<b>触发有人后</b>每隔 0x17 周期上报一次 0x81」，
+    所以<b>无人期间可能完全静默</b>。演示页因此把「无人（静默推断）」与「链路故障」
+    做成了<b>两个独立状态</b>：<br>
+    → 超过 <code>max(3 × 上报周期, 8 s)</code> 没收到 0x81 → 大字显示「无人」，
+      并标注<b>按静默推断</b>（这不是故障）<br>
+    → 只有「一个合法帧都收不到」「坏帧率 &gt; 20%」这类情况才判<b>链路故障</b>，
+      在状态卡上用红色「链路 …」标签单独显示<br>
+    → 想确认雷达还在工作：把「应用演示推荐参数」里的 <code>0x17</code> 设成 10（1 s），
+      然后站到雷达前面走两步，看事件时间线是否有「无人 → 有人」
+  </div>
+
+  <div class="box warn">
+    <b>6. 能量条一直是空的？</b><br>
+    能量条画的是 <code>0x80</code> 调试数据，需要 <b><code>SET 0x1E=1</code></b> 打开调试模式
+    （协议未明写这条依赖，<b>待实测</b>）。没打开时能量区会显示
+    「未收到能量帧 · 需 SET 0x1E=1 开调试模式（待实测）」，其余三块（状态卡 / 散点 / 时间线）照常工作。<br>
+    → 点「应用演示推荐参数…（需确认）」时那 5 条 SET 里就包含 <code>0x1E=1</code>
+  </div>
+
+  <div class="foot">
+    <b>说明</b>：本固件与演示页为技术演示用途（版本 <b>0.9.0</b>，<b>尚未实机验证</b>），
+    数据仅供评估与二次开发参考。协议依据：《EDV163 替换 EDQ152 成品通用协议 V1.1》。<br>
+    如有实测问题请反馈 <a href="mailto:support@easydetek.com">support@easydetek.com</a> ·
+    MIT License · 署名 <a href="https://github.com/fuhua817">@fuhua817</a>
+  </div>
+
+</div>
+</body>
+</html>

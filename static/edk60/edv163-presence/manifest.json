@@ -1,0 +1,16 @@
+{
+  "name": "EDK60 + EDV163 人体存在检测演示固件（透传桥，与水位示例同一固件）",
+  "version": "0.9.0",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32-C6",
+      "parts": [
+        {
+          "path": "edk60_edv163_bridge.bin",
+          "offset": 0
+        }
+      ]
+    }
+  ]
+}

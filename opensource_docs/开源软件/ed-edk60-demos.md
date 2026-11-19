@@ -102,6 +102,8 @@ C6 的 USB Serial/JTAG 只有一个外设。若把控制台日志也接到 USB�
 
 - [生命体征检测实施指南（EDK60 + EDV151）](/opensource/开源硬件/EDK60/flash-guide)：零基础、免安装，网页一键烧录体征固件
 - [人数统计雷达实施指南（EDV11P 侧装）](/opensource/开源硬件/EDK60/track-guide)：接线 → 烧录 → 看到轨迹的完整配方
+- [人体存在检测实施指南（EDV163-N-03）](/opensource/开源硬件/EDK60/presence-guide)：接线 → 烧录 → 看「有人 / 无人」的完整配方
+  （复用同一套 EDV163 纯字节双向透传桥固件，人存解析全在网页端）
 
 ## 仓库里的关键文档
 
@@ -138,4 +140,5 @@ C6 的 USB Serial/JTAG 只有一个外设。若把控制台日志也接到 USB�
 - [EDK60 开发板](/opensource/开源硬件/EDK60/)：硬件概述、附件与资料、在线工具
 - [应用案例：EDK60 + EDV151 呼吸心率监测方案](/blog/edk60-vital-signs-edv151)
 - [应用案例：EDK60 + EDV11P 侧装人数统计与轨迹跟踪](/blog/edk60-edv11p-person-tracking)
+- [应用案例：EDK60 + EDV163-N-03 人体存在检测](/blog/edk60-edv163-presence)
 - [ed_radar 组件](./ed-radar)：多款雷达的 ESP-IDF 统一抽象接口层
