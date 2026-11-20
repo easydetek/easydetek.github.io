@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="780" viewBox="0 0 1200 780" font-family='"Microsoft YaHei","PingFang SC","Hiragino Sans GB",sans-serif'>
+<title>V1.4 帧结构与 0x81 上报载荷</title>
+<desc>帧 = 帧头2 + 长度2 + msgid2 + op1 + type1 + len2 + Value(N) + 校验1，整帧 11+N、无帧尾、不转义；校验和为帧头到 Value 末逐字节求和 mod 256；0x81 固定 9 字节单目标</desc>
+<rect width="1200" height="780" fill="#ffffff"/>
+<text x="48" y="46" font-size="24" fill="#0f172a" text-anchor="start" font-weight="700">V1.4 的帧长这样：11 + N，没有帧尾</text>
+<text x="48" y="72" font-size="13" fill="#64748b" text-anchor="start" font-weight="400">与 V1.1 的根本区别：帧尾 0x0A 已取消、字节转义已废除；拿旧解析器（等 0x0A）读新设备会一帧都解不出</text>
+<text x="56" y="116" font-size="14" fill="#0f172a" text-anchor="start" font-weight="700">A. 一整帧（示例取 0x81 主动上报）</text>
+<rect x="56.0" y="140.0" width="96" height="76.0" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+<text x="104.0" y="164.0" font-size="13" fill="#0f172a" text-anchor="middle" font-weight="700">帧头</text>
+<text x="104.0" y="182.0" font-size="10.5" fill="#64748b" text-anchor="middle" font-weight="400" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>BYTE1-2</text>
+<text x="104.0" y="202.0" font-size="12" fill="#0b6bcb" text-anchor="middle" font-weight="700" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>45 44</text>
+<rect x="152.0" y="140.0" width="96" height="76.0" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+<text x="200.0" y="164.0" font-size="13" fill="#0f172a" text-anchor="middle" font-weight="700">长度</text>
+<text x="200.0" y="182.0" font-size="10.5" fill="#64748b" text-anchor="middle" font-weight="400" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>BYTE3-4</text>
+<text x="200.0" y="202.0" font-size="12" fill="#0b6bcb" text-anchor="middle" font-weight="700" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>00 14</text>
+<rect x="248.0" y="140.0" width="96" height="76.0" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+<text x="296.0" y="164.0" font-size="13" fill="#0f172a" text-anchor="middle" font-weight="700">msgid</text>
+<text x="296.0" y="182.0" font-size="10.5" fill="#64748b" text-anchor="middle" font-weight="400" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>BYTE5-6</text>
+<text x="296.0" y="202.0" font-size="12" fill="#0b6bcb" text-anchor="middle" font-weight="700" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>00 01</text>
+<rect x="344.0" y="140.0" width="60" height="76.0" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+<text x="374.0" y="164.0" font-size="13" fill="#0f172a" text-anchor="middle" font-weight="700">op</text>
+<text x="374.0" y="182.0" font-size="10.5" fill="#64748b" text-anchor="middle" font-weight="400" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>BYTE7</text>
+<text x="374.0" y="202.0" font-size="12" fill="#0b6bcb" text-anchor="middle" font-weight="700" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>A3</text>
+<rect x="404.0" y="140.0" width="60" height="76.0" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+<text x="434.0" y="164.0" font-size="13" fill="#0f172a" text-anchor="middle" font-weight="700">type</text>
+<text x="434.0" y="182.0" font-size="10.5" fill="#64748b" text-anchor="middle" font-weight="400" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>BYTE8</text>
+<text x="434.0" y="202.0" font-size="12" fill="#0b6bcb" text-anchor="middle" font-weight="700" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>81</text>
+<rect x="464.0" y="140.0" width="104" height="76.0" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+<text x="516.0" y="164.0" font-size="13" fill="#0f172a" text-anchor="middle" font-weight="700">Value 长度</text>
+<text x="516.0" y="182.0" font-size="10.5" fill="#64748b" text-anchor="middle" font-weight="400" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>BYTE9-10</text>
+<text x="516.0" y="202.0" font-size="12" fill="#0b6bcb" text-anchor="middle" font-weight="700" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>00 09</text>
+<rect x="568.0" y="140.0" width="448" height="76.0" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+<text x="792.0" y="164.0" font-size="13" fill="#0f172a" text-anchor="middle" font-weight="700">Value（N 字节）</text>
+<text x="792.0" y="182.0" font-size="10.5" fill="#64748b" text-anchor="middle" font-weight="400" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>BYTE11-10+N</text>
+<text x="792.0" y="202.0" font-size="12.5" fill="#0b6bcb" text-anchor="middle" font-weight="700" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>01 02 01 00 64 00 C8 05 DC</text>
+<rect x="1016.0" y="140.0" width="120" height="76.0" rx="6" fill="#fef2f2" stroke="#dc2626" stroke-width="1.6"/>
+<text x="1076.0" y="164.0" font-size="13" fill="#dc2626" text-anchor="middle" font-weight="700">校验和</text>
+<text x="1076.0" y="182.0" font-size="10.5" fill="#64748b" text-anchor="middle" font-weight="400" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>BYTE11+N</text>
+<text x="1076.0" y="202.0" font-size="12" fill="#dc2626" text-anchor="middle" font-weight="700" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>DC</text>
+<line x1="56" y1="232.0" x2="56" y2="246.0" stroke="#64748b" stroke-width="1.2"/>
+<line x1="1016" y1="232.0" x2="1016" y2="246.0" stroke="#64748b" stroke-width="1.2"/>
+<line x1="56" y1="246.0" x2="1016" y2="246.0" stroke="#64748b" stroke-width="1.6"/>
+<text x="536" y="264.0" font-size="12" fill="#64748b" text-anchor="middle" font-weight="400">校验和 = 这一段逐字节求和 mod 256（不含校验和自己；V1.4 没有帧尾，也没有「帧尾前一个字节」这种说法）</text>
+<rect x="56" y="286" width="1088" height="58" rx="8" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1"/>
+<text x="72" y="308" font-size="12.5" fill="#15803d" text-anchor="start" font-weight="700">✓ 长度字段 = 11 + N（N = Value 字节数）</text>
+<text x="72" y="328" font-size="12" fill="#166534" text-anchor="start" font-weight="400">N = 0 时是 11 B（例如 GET 0x01 = 45 44 00 0B 00 01 A0 01 00 00 36）；上面这条 20 B = 11 + 9。</text>
+<text x="56" y="386" font-size="14" fill="#0f172a" text-anchor="start" font-weight="700">B. Value 里装什么：0x81 固定 9 字节、单目标（V1.4 已删 0x13 通道数，没有「每通道」）</text>
+<rect x="56.0" y="410.0" width="150" height="92.0" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+<text x="131.0" y="434.0" font-size="13.5" fill="#0f172a" text-anchor="middle" font-weight="700">有人/无人</text>
+<text x="131.0" y="468.0" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>01</text>
+<text x="131.0" y="488.0" font-size="10.5" fill="#64748b" text-anchor="middle" font-weight="400">0 无人 ／ 1 有人</text>
+<text x="131.0" y="450.0" font-size="10" fill="#94a3b8" text-anchor="middle" font-weight="400" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>1 B</text>
+<rect x="206.0" y="410.0" width="170" height="92.0" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+<text x="291.0" y="434.0" font-size="13.5" fill="#0f172a" text-anchor="middle" font-weight="700">状态</text>
+<text x="291.0" y="468.0" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>02</text>
+<text x="291.0" y="488.0" font-size="10.5" fill="#64748b" text-anchor="middle" font-weight="400">0 无人 ／ 1 静止 ／ 2 运动</text>
+<text x="291.0" y="450.0" font-size="10" fill="#94a3b8" text-anchor="middle" font-weight="400" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>1 B</text>
+<rect x="376.0" y="410.0" width="170" height="92.0" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+<text x="461.0" y="434.0" font-size="13.5" fill="#0f172a" text-anchor="middle" font-weight="700">方向</text>
+<text x="461.0" y="468.0" font-size="15" fill="#0f172a" text-anchor="middle" font-weight="700" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>01</text>
+<text x="461.0" y="488.0" font-size="10.5" fill="#64748b" text-anchor="middle" font-weight="400">0 静止 ／ 1 靠近 ／ 2 远离</text>
+<text x="461.0" y="450.0" font-size="10" fill="#94a3b8" text-anchor="middle" font-weight="400" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>1 B</text>
+<rect x="546.0" y="410.0" width="180" height="92.0" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+<text x="636.0" y="434.0" font-size="13.5" fill="#0b6bcb" text-anchor="middle" font-weight="700">X</text>
+<text x="636.0" y="468.0" font-size="15" fill="#0b6bcb" text-anchor="middle" font-weight="700" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>00 64</text>
+<text x="636.0" y="488.0" font-size="10.5" fill="#64748b" text-anchor="middle" font-weight="400">int16 大端（可负）</text>
+<text x="636.0" y="450.0" font-size="10" fill="#94a3b8" text-anchor="middle" font-weight="400" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>2 B</text>
+<rect x="726.0" y="410.0" width="180" height="92.0" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+<text x="816.0" y="434.0" font-size="13.5" fill="#0b6bcb" text-anchor="middle" font-weight="700">Y</text>
+<text x="816.0" y="468.0" font-size="15" fill="#0b6bcb" text-anchor="middle" font-weight="700" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>00 C8</text>
+<text x="816.0" y="488.0" font-size="10.5" fill="#64748b" text-anchor="middle" font-weight="400">int16 大端（可负）</text>
+<text x="816.0" y="450.0" font-size="10" fill="#94a3b8" text-anchor="middle" font-weight="400" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>2 B</text>
+<rect x="906.0" y="410.0" width="180" height="92.0" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+<text x="996.0" y="434.0" font-size="13.5" fill="#c2410c" text-anchor="middle" font-weight="700">Z</text>
+<text x="996.0" y="468.0" font-size="15" fill="#c2410c" text-anchor="middle" font-weight="700" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>05 DC</text>
+<text x="996.0" y="488.0" font-size="10.5" fill="#64748b" text-anchor="middle" font-weight="400">uint16 大端（无负）</text>
+<text x="996.0" y="450.0" font-size="10" fill="#94a3b8" text-anchor="middle" font-weight="400" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>2 B</text>
+<text x="1086" y="400.0" font-size="12" fill="#64748b" text-anchor="end" font-weight="700" font-family='Consolas,"Cascadia Mono","Courier New",monospace'>9 B</text>
+<text x="56" y="528.0" font-size="12" fill="#64748b" text-anchor="start" font-weight="400">示例这条帧 = 有人 · 运动 · 靠近 · X = 100 mm · Y = 200 mm · Z = 1500 mm（Z 是 uint16，所以没有负高度）</text>
+<text x="56" y="556" font-size="14" fill="#0f172a" text-anchor="start" font-weight="700">C. 照这三条写解析器，基本不会错</text>
+<circle cx="68" cy="576" r="9" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
+<text x="68" y="580" font-size="11.5" fill="#0f172a" text-anchor="middle" font-weight="700">1</text>
+<text x="90" y="580" font-size="12.5" fill="#15803d" text-anchor="start" font-weight="700">长度优先</text>
+<text x="172" y="580" font-size="12" fill="#64748b" text-anchor="start" font-weight="400">先读 BYTE3-4 拿整帧长度，再按长度切；不要「遇到 0x0A 就断帧」——V1.4 没有帧尾，正文里的 0x09/0x0A 是合法原值。</text>
+<circle cx="68" cy="606" r="9" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
+<text x="68" y="610" font-size="11.5" fill="#0f172a" text-anchor="middle" font-weight="700">2</text>
+<text x="90" y="610" font-size="12.5" fill="#15803d" text-anchor="start" font-weight="700">校验定位</text>
+<text x="172" y="610" font-size="12" fill="#64748b" text-anchor="start" font-weight="400">校验和就是整帧最后一个字节（BYTE11+N），不是「帧尾前一个字节」。</text>
+<circle cx="68" cy="636" r="9" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
+<text x="68" y="640" font-size="11.5" fill="#0f172a" text-anchor="middle" font-weight="700">3</text>
+<text x="90" y="640" font-size="12.5" fill="#c2410c" text-anchor="start" font-weight="700">别猜通道</text>
+<text x="172" y="640" font-size="12" fill="#64748b" text-anchor="start" font-weight="400">0x81 就是 9 B 一个目标；长度不是 9 就判「载荷长度异常」并把原始 hex 打出来，别按 7 或 8 去猜。</text>
+<text x="56" y="750" font-size="11" fill="#94a3b8" text-anchor="start" font-weight="400">数据源：《EDV163-N-03 串口通信协议 V1.4》（2026-11-04）§2 帧格式、§3 上报数据；示例帧与实施指南 7.5 表一致。</text>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/></marker></defs>
+</svg>
